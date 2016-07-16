@@ -1,0 +1,8 @@
+c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\bin\Debug\Project7_130716.exe.config
+c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\obj\Debug\Project7_130716.csprojResolveAssemblyReference.cache
+c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\obj\Debug\Project7_130716.Properties.Resources.resources
+c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\obj\Debug\Project7_130716.csproj.GenerateResource.Cache
+c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\bin\Debug\Project7_130716.exe
+c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\bin\Debug\Project7_130716.pdb
+c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\obj\Debug\Project7_130716.exe
+c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\obj\Debug\Project7_130716.pdb
