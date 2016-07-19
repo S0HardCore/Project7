@@ -7,7 +7,7 @@ namespace Project7_130716
     class ConsolePrototype
         {
             public Boolean Enabled;
-
+            
             private string consoleString;
             private string consolePrevString;
             private string consoleLog;
@@ -20,9 +20,14 @@ namespace Project7_130716
             public void setString(string String) { consoleString = String; }
             public void setPrevString(string String) { consolePrevString = String; }
             public void setLog(string String) { consoleLog = String; }
+            public void Close()
+            {
+                Enabled = false;
+                consoleString = "";
+            }
             public Rectangle getRegion()
             {
-                CONSOLE_REGION = new Rectangle((Form1.Resolution.Width - 520) / 2, Form1.Resolution.Height - 50, 520, 50);
+                CONSOLE_REGION = new Rectangle(Form1.Resolution.Width - 520, 0, 520, 50);
                 return CONSOLE_REGION;
             }
             public Rectangle getRegionForPrevString()
@@ -53,6 +58,9 @@ namespace Project7_130716
                         else
                             Form1.ShowDI = true;
                         consoleLog = "Debug output is " + (Form1.ShowDI ? "enabled." : "disabled");
+                        break;
+                    case "REFRESH":
+                        Form1.RefreshInventory();
                         break;
                     case "QUIT":
                     case "EXIT":

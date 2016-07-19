@@ -7,6 +7,7 @@ namespace Project7_130716
     {
         public PointF Position;
         public float Direction;
+        public Form1.GunType Type;
         public int Power = 1000;
         public int Size = Form1.PROJECTILE_SIZE;
         public Boolean RicochetedOnce = false;
@@ -16,13 +17,25 @@ namespace Project7_130716
             Position = new PointF(Form1.Cos(_Direction) * 18 + _Position.X, Form1.Sin(_Direction) * 18 + _Position.Y);
             Direction = _Direction;
         }
+        public Projectile(PointF _Position, float _Direction, Form1.GunType _Type) : this(_Position, _Direction)
+        {
+            Type = _Type;
+            if (Type == Form1.GunType.Shotgun)
+            {
+                Power = 500;
+                Size = 1;
+                RicochetedOnce = true;
+            }
+        }
         public PointF getNextPointF()
         {
             return new PointF(Position.X + Form1.Cos(Direction) * Form1.PROJECTILE_VELOCITY, Position.Y + Form1.Sin(Direction) * Form1.PROJECTILE_VELOCITY);
         }
-        public void Move(Region _Map)
+        public void Move(Region _Map, Region _Shield)
         {
             PointF next = new PointF(Position.X + Form1.Cos(Direction) * Form1.PROJECTILE_VELOCITY, Position.Y + Form1.Sin(Direction) * Form1.PROJECTILE_VELOCITY);
+            if (_Shield.IsVisible(next))
+                Exist = false;
             if (_Map.IsVisible(next))
                 if (!RicochetedOnce)
                 {

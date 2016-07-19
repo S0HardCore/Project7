@@ -37,7 +37,11 @@ namespace Project7_130716
                 Duration += 0.01f;
             Position.Y--;
             if (Text.Contains("Respawn"))
+            {
+                if (Form1.getRandom.Next(4) == 1)
+                    Position.Y--;
                 Text = "Respawn in " + Math.Round(MaxDuration - Duration, 1).ToString();
+            }
             if (MaxDuration > 1)
                 AlphaDecrement = (int)(2.55f / MaxDuration);
             else

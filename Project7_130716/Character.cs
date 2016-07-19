@@ -6,17 +6,35 @@ namespace Project7_130716
 {
     class Character
     {
-        public Point Position;
-        public Byte Health = 100;
-        public Boolean Rotation = true;
-        public Region Body = new Region();
-        public int JumpProgress = -1;
-        public float RespawnTimer = -0.01f;
-        public Boolean AtGround = false;
-        public Region Head = new Region(),
-            Arms = new Region(),
-            Chest = new Region(),
-            Legs = new Region();
+        public Point 
+            Position;
+        public Byte
+            Health = 100;
+        public Boolean
+            Rotation = true,
+            AtGround = false,
+            Backpack = false;
+        public int 
+            JumpProgress = -1;
+        public float 
+            RespawnTimer = -0.01f;
+        public Region
+            Body = new Region(new Rectangle(-1, -1, 1, 1)),
+            Head = new Region(new Rectangle(-1, -1, 1, 1)),
+            Arms = new Region(new Rectangle(-1, -1, 1, 1)),
+            Chest = new Region(new Rectangle(-1, -1, 1, 1)),
+            Legs = new Region(new Rectangle(-1, -1, 1, 1)),
+            Shield = new Region(new Rectangle(-1, -1, 1, 1));
+        public float
+            ProjectileCooldown = Form1.PROJECTILE_COOLDOWN,
+            PistolReload = Form1.PISTOL_RELOAD_COOLDOWN,
+            ExplosiveGrenadeCooldown = Form1.EXPLOSIVE_GRENADE_COOLDOWN,
+            ExplosiveGrenadeDown = -0.01f,
+            BlinkGrenadeCooldown = Form1.BLINK_GRENADE_COOLDOWN,
+            ShotgunReload = Form1.SHOTGUN_RELOAD_COOLDOWN,
+            RailgunCooldown = Form1.RAILGUN_COOLDOWN,
+            ShieldCooldown = Form1.SHIELD_COOLDOWN,
+            ShieldDuration = -0.01f;
         
         public void RefreshBody()
         {
@@ -49,6 +67,15 @@ namespace Project7_130716
                 Body.Union(Chest);
                 Body.Union(Arms);
                 Body.Union(Legs);
+                if (ShieldDuration > -0.01f)
+                {
+                    ShieldDuration += 0.01f;
+                    GraphicsPath ShieldGP = new GraphicsPath();
+                    ShieldGP.AddEllipse(Position.X - (Form1.SHIELD_SIZE - 26) / 2, Position.Y - (Form1.SHIELD_SIZE - 54) / 2, Form1.SHIELD_SIZE, Form1.SHIELD_SIZE);
+                    Shield = new Region(ShieldGP);
+                    if (ShieldDuration >= Form1.SHIELD_DURATION)
+                        ShieldDuration = -0.01f;
+                }
             }
             else
                 if (RespawnTimer < Form1.CHARACTER_RESPAWN_DURATION)
@@ -70,12 +97,15 @@ namespace Project7_130716
         }
         public Boolean DoDamage(int Damage)
         {
-            int HealthAfterDamage = Health - Damage;
-            Health = (Byte)HealthAfterDamage;
-            if (HealthAfterDamage < 0)
+            if (ShieldDuration < 0)
             {
-                RespawnTimer = 0f;
-                return false;
+                int HealthAfterDamage = Health - Damage;
+                Health = (Byte)HealthAfterDamage;
+                if (HealthAfterDamage <= 0)
+                {
+                    RespawnTimer = 0f;
+                    return false;
+                }
             }
             return true;
         }
