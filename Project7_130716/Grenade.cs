@@ -7,7 +7,9 @@ namespace Project7_130716
     class Grenade
     {
         public Form1.GrenadeType Type;
-        public Boolean Exist = true;
+        public Boolean
+            Exist = true,
+            Excluded = false;
         public Point Position;
         public float Direction;
         public float Timer = 0f;

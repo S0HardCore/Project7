@@ -12,13 +12,14 @@ namespace Project7_130716
             CHARACTER_VERTICAL_VELOCITY = 5,
             CHARACTER_HORIZONTAL_VELOCITY = 5,
             CHARACTER_JUMP_LENGTH = 140,
-            PROJECTILE_VELOCITY = 20,
+            PROJECTILE_VELOCITY = 40,
             PROJECTILE_SIZE = 4,
             PROJECTILE_RICOCHET_RANGE = 5,
             PISTOL_CAGE = 6,
             SWORD_FRAMES = 6,
             EXPLOSION_FRAMES = 44,
             GRENADE_SIZE = 16,
+            RAILGUN_SIZE = 4,
             SHIELD_SIZE = 100,
             INVENTORY_SLOTS_MARGIN = 40,
             INVENTORY_SLOT_SIZE = 100,
@@ -33,6 +34,7 @@ namespace Project7_130716
             BLINK_GRENADE_COOLDOWN = 9.3f,
             BLINK_GRENADE_DURATION = 1.5f,
             SHOTGUN_RELOAD_COOLDOWN = 2.3f,
+            RAILGUN_DURATION = 0.05f,
             RAILGUN_COOLDOWN = 10.8f,
             SHIELD_DURATION = 1.7f,
             SHIELD_COOLDOWN = 12.5f,
@@ -43,9 +45,10 @@ namespace Project7_130716
             Resolution = Screen.PrimaryScreen.Bounds.Size;
         static readonly Point
             INVENTORY_INITIAL_POINT = new Point((Resolution.Width - INVENTORY_UI_SIZE) / 2, Resolution.Height - INVENTORY_SLOT_SIZE - (Resolution.Height > 1000 ? INVENTORY_SLOTS_MARGIN : 3 * INVENTORY_SLOTS_MARGIN / 4));
-        static readonly Rectangle
+        public static readonly Rectangle
             BACKPACK_RECTANGLE = new Rectangle((Resolution.Width - BACKPACK_SIZE) / 2, INVENTORY_INITIAL_POINT.Y - BACKPACK_SIZE - INVENTORY_SLOTS_MARGIN / (Resolution.Height > 1000 ? 1 : 2), BACKPACK_SIZE, BACKPACK_SIZE),
-            MAP_REGION_RECTANGLE = new Rectangle(-250, -250, 2420, 1580),
+            MAP_OUTTER = new Rectangle(-250, -250, 2420, 1580),
+            MAP_INNER = new Rectangle(-50, -50, 2020, 1180),
             FPS_RECTANGLE = new Rectangle(-1, -2, 30, 22);
         static readonly Rectangle[]
             INVENTORY_SLOTS = new Rectangle[4],
@@ -105,7 +108,7 @@ namespace Project7_130716
             QuartzFont = "Quartz MS";
         static int
             lastTick, lastFrameRate, frameRate,
-            HoveredSlot = -1,
+            HoveredSlot = -1, BackpackCurrentSlot = 0,
             ammoInCage = 6,
             swordFrames = 0;
         static Boolean
@@ -143,8 +146,11 @@ namespace Project7_130716
             Grenades = new List<Grenade>();
         static List<Effect>
             Effects = new List<Effect>();
-        public static 
-            Boolean ShowDI = false;
+        static List<Ray>
+            Rays = new List<Ray>();
+        public static
+            Boolean ShowDI = false,
+            InventoryControlMode = false;
         static ConsolePrototype
             Console = new ConsolePrototype();
         static Boolean[] 
@@ -180,8 +186,8 @@ namespace Project7_130716
             Player1 = new Character(250, 50);
             ViewOffset = new Point(Resolution.Width / 2 - Player1.Position.X, Resolution.Height / 2 - Player1.Position.Y);
             Map.MakeEmpty();
-            Map.Union(MAP_REGION_RECTANGLE);
-            Map.Exclude(new Rectangle(-50, -50, 2020, 1180));
+            Map.Union(MAP_OUTTER);
+            Map.Exclude(MAP_INNER);
             Map.Union(new Rectangle(200, 350, 400, 50));
             Map.Union(new Rectangle(50, 500, 350, 30));
             Map.Union(new Rectangle(0, 650, 500, 20));
@@ -247,6 +253,13 @@ namespace Project7_130716
                                     Projectiles.Add(new Projectile(Player1.Position, fi, GunType.Shotgun));
                             }
                             break;
+                        case Inventory.Railgun:
+                            if (Player1.RailgunCooldown >= RAILGUN_COOLDOWN)
+                            {
+                                Player1.RailgunCooldown = 0f;
+                                Rays.Add(new Ray(Player1.getCenterPointF(), AngleBetween((PointF)OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Player1.getCenterPointF()), Player1));
+                            }
+                            break;
                         case Inventory.Shield:
                             if (Player1.ShieldCooldown >= SHIELD_COOLDOWN)
                             {
@@ -281,20 +294,23 @@ namespace Project7_130716
 
         void pMouseMove(object sender, MouseEventArgs e)
         {
-            Rectangle NewBackPack = BACKPACK_RECTANGLE;
-            NewBackPack.Location.Offset(10, 10);
-            NewBackPack.Inflate(-10, -10);
-            Boolean Determined = false;
-            if (Player1.Backpack && NewBackPack.Contains(e.Location))
-                for (int a = 0; a < BackpackIcons.Length; ++a )
-                    if (BACKPACK_SLOTS[a].Contains(e.Location))
-                    {
-                        HoveredSlot = a;
-                        Determined = true;
-                        break;
-                    }
-            if (!Determined)
-                HoveredSlot = -1;
+            if (!InventoryControlMode)
+            {
+                Rectangle NewBackPack = BACKPACK_RECTANGLE;
+                NewBackPack.Location.Offset(10, 10);
+                NewBackPack.Inflate(-10, -10);
+                Boolean Determined = false;
+                if (Player1.Backpack && NewBackPack.Contains(e.Location))
+                    for (int a = 0; a < BackpackIcons.Length; ++a)
+                        if (BACKPACK_SLOTS[a].Contains(e.Location))
+                        {
+                            HoveredSlot = a;
+                            Determined = true;
+                            break;
+                        }
+                if (!Determined)
+                    HoveredSlot = -1;
+            }
         }
 
         void pKeyUp(object sender, KeyEventArgs e)
@@ -316,12 +332,15 @@ namespace Project7_130716
                     else
                         Console.Close();
                     break;
+                case Keys.Left:
                 case Keys.A:
                     KeysDown[0] = false;
                     break;
+                case Keys.Right:
                 case Keys.D:
                     KeysDown[1] = false;
                     break;
+                case Keys.Up:
                 case Keys.W:
                     KeysDown[2] = false;
                     break;
@@ -329,11 +348,14 @@ namespace Project7_130716
                     if (!Console.Enabled)
                     {
                         Player1.Backpack = !Player1.Backpack;
+                        if (Player1.Backpack)
+                            HoveredSlot = (int)CurrentItem;
                         for (int a = 0; a < 3; ++a)
                             KeysDown[a] = false;
                     }
                     break;
                 case Keys.D1:
+                    BackpackCurrentSlot = 0;
                     if (!Player1.Backpack)
                         CurrentItem = InventorySlots[0];
                     else
@@ -345,6 +367,7 @@ namespace Project7_130716
                         }
                     break;
                 case Keys.D2:
+                    BackpackCurrentSlot = 1;
                     if (!Player1.Backpack)
                         CurrentItem = InventorySlots[1];
                     else
@@ -356,6 +379,7 @@ namespace Project7_130716
                         }
                     break;
                 case Keys.D3:
+                    BackpackCurrentSlot = 2;
                     if (!Player1.Backpack)
                         CurrentItem = InventorySlots[2];
                     else
@@ -367,6 +391,7 @@ namespace Project7_130716
                         }
                     break;
                 case Keys.D4:
+                    BackpackCurrentSlot = 3;
                     if (!Player1.Backpack)
                         CurrentItem = InventorySlots[3];
                     else
@@ -404,6 +429,12 @@ namespace Project7_130716
             else
                 switch (e.KeyData)
                 {
+                    case Keys.Enter:
+                        CurrentItem = (Inventory)HoveredSlot;
+                        InventoryIcons[BackpackCurrentSlot] = BackpackIcons[HoveredSlot];
+                        InventorySlots[BackpackCurrentSlot] = (Inventory)HoveredSlot;
+                        break;
+                    case Keys.Left:
                     case Keys.A:
                         if (!Player1.Backpack)
                         {
@@ -411,7 +442,13 @@ namespace Project7_130716
                             KeysDown[0] = true;
                             KeysDown[1] = false;
                         }
+                        else
+                            if (HoveredSlot % 5 == 0 || HoveredSlot < 0)
+                                HoveredSlot += (HoveredSlot >= 5 ? (BackpackIcons.Length % 5 - 1) : 4);
+                            else
+                                HoveredSlot--;
                         break;
+                    case Keys.Right:
                     case Keys.D:
                         if (!Player1.Backpack)
                         {
@@ -419,10 +456,37 @@ namespace Project7_130716
                             KeysDown[0] = false;
                             KeysDown[1] = true;
                         }
+                        else
+                            if (HoveredSlot % 5 == 4)
+                                HoveredSlot -= 4;
+                            else
+                                if (HoveredSlot < BackpackIcons.Length - 1)
+                                    HoveredSlot++;
                         break;
+                    case Keys.Up:
                     case Keys.W:
                         if (!Player1.Backpack)
-                        KeysDown[2] = true;
+                            KeysDown[2] = true;
+                        else
+                            if (HoveredSlot < 5)
+                            {
+                                HoveredSlot += (BackpackIcons.Length / 5) * 5;
+                                if (HoveredSlot >= BackpackIcons.Length)
+                                    HoveredSlot = BackpackIcons.Length - 1;
+                            }
+                            else
+                                HoveredSlot -= 5;
+                        break;
+                    case Keys.Down:
+                    case Keys.S:
+                        if (Player1.Backpack)
+                            if (HoveredSlot > 20)
+                                HoveredSlot -= (int)((BackpackIcons.Length / 5) * 5);
+                            else
+                                if (HoveredSlot + 5 < BackpackIcons.Length)
+                                    HoveredSlot += 5;
+                                else
+                                    HoveredSlot = BackpackIcons.Length - 1;
                         break;
                 }
         }
@@ -461,6 +525,9 @@ namespace Project7_130716
                     if (Player1.JumpProgress == -1 && Player1.AtGround)
                         Player1.JumpProgress++;
             }
+            for (int b = 0; b < Rays.Count; ++b)
+                if (!Rays[b].Exist)
+                    Rays.Remove(Rays[b]);
             for (int b = 0; b < Grenades.Count; ++b)
                 if (Grenades[b].Exist)
                     Grenades[b].Move(Map);
@@ -531,6 +598,19 @@ namespace Project7_130716
             if (Control.IsKeyLocked(Keys.Scroll))
                 g.ScaleTransform(0.5f, 0.5f);
             g.TranslateTransform(ViewOffset.X, ViewOffset.Y);
+            foreach (Ray TR in Rays)
+                if (TR.Exist)
+                {
+                    TR.Refresh(Map, Player1);
+                    if (TR.RayRegion.IsVisible(Player1.Body.GetBounds(g)) && Player1 != TR.Initiator)
+                        Player1.DoDamage(33);
+                    if (!TR.Excluded)
+                    {
+                        Map.Exclude(TR.RayRegion);
+                        TR.Excluded = true;
+                    }
+                    g.FillRegion(Brushes.Red, TR.RayRegion);
+                }
             g.FillRegion(MapBrush, Map);
             if (Player1.RespawnTimer < 0)
             {
@@ -564,7 +644,7 @@ namespace Project7_130716
                     Effects[b].Draw(g);
                     if (Effects[b].Type == EffectType.Teleportation && Effects[b].Frames == Effects[b].MaxFrames / 3)
                         Player1.Position = NewOffset(Effects[b].Position, 15, -15);
-                    if (Effects[b].Type == EffectType.Explosion && Player1.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce)
+                    if (Effects[b].Type == EffectType.Explosion && Player1.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce && Player1.ShieldDuration < 0)
                     {
                         int damage = 1; Boolean calculated = false;
                         double distance1 = Math.Abs(Math.Sqrt(Math.Pow(Player1.Position.X - Effects[b].getCenter().X, 2) + Math.Pow(Player1.Position.Y - Effects[b].getCenter().Y, 2))),
@@ -580,8 +660,7 @@ namespace Project7_130716
                         Boolean LethalDamage = Player1.DoDamage(damage);
                         if (!LethalDamage)
                             FloatingTexts.Add(new FloatingText(new Point(Player1.Position.X - 25, Player1.Position.Y - 30), Color.FromArgb(255, 0, 192, 0), "Respawn", new Font(QuartzFont, 16), CHARACTER_RESPAWN_DURATION));
-                        if (Player1.ShieldDuration < 0)
-                            FloatingTexts.Add(new FloatingText(new Point(Player1.Position.X + 10, Player1.Position.Y - 10), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION / (LethalDamage ? 3 : 1)));
+                        FloatingTexts.Add(new FloatingText(new Point(Player1.Position.X + 10, Player1.Position.Y - 10), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION / (LethalDamage ? 3 : 1)));
                         Effects[b].HitedOnce = true;
                     }
                 }
@@ -631,6 +710,11 @@ namespace Project7_130716
                             g.DrawString(Math.Round(SHOTGUN_RELOAD_COOLDOWN - Player1.ShotgunReload, 1).ToString(), new Font("Tahoma", 14),
                                 new SolidBrush(Color.FromArgb(190, 190, 190)), NewOffset(INVENTORY_SLOTS[a].Location, 0, 102));
                         break;
+                    case Inventory.Railgun:
+                        if (Player1.RailgunCooldown < RAILGUN_COOLDOWN)
+                            g.DrawString(Math.Round(RAILGUN_COOLDOWN - Player1.RailgunCooldown, 1).ToString(), new Font("Tahoma", 14),
+                                new SolidBrush(Color.FromArgb(190, 190, 190)), NewOffset(INVENTORY_SLOTS[a].Location, 0, 102));
+                        break;
                     case Inventory.Shield:
                         if (Player1.ShieldCooldown < SHIELD_COOLDOWN)
                             g.DrawString(Math.Round(SHIELD_COOLDOWN - Player1.ShieldCooldown, 1).ToString(), new Font("Tahoma", 14),
@@ -664,8 +748,7 @@ namespace Project7_130716
                 g.FillRectangle(new SolidBrush(Color.FromArgb(64, 0, 0, 0)), FPS_RECTANGLE);
                 g.DrawString(CalculateFrameRate().ToString(), new Font(QuartzFont, 13), Brushes.White, (RectangleF)FPS_RECTANGLE, MiddleText);
                 string output = "Player 1 Position: " + Player1.Position.ToString() + "\n" +
-                    "View Offset: " + ViewOffset.ToString() + "\n" +
-                    Projectiles.Count.ToString();
+                    "View Offset: " + ViewOffset.ToString() + "\n" + HoveredSlot.ToString();
                 g.DrawString(output, new Font(QuartzFont, 14), Brushes.Aqua, 0, FPS_RECTANGLE.Height);
             }
             #endregion
@@ -739,7 +822,7 @@ namespace Project7_130716
         {
             Rectangle TR;
         Mark:
-            TR = new Rectangle(getRandom.Next(MAP_REGION_RECTANGLE.Left, MAP_REGION_RECTANGLE.Right), getRandom.Next(MAP_REGION_RECTANGLE.Top, MAP_REGION_RECTANGLE.Bottom), 54, 26);
+            TR = new Rectangle(getRandom.Next(MAP_OUTTER.Left, MAP_OUTTER.Right), getRandom.Next(MAP_OUTTER.Top, MAP_OUTTER.Bottom), 54, 26);
                 if (!Map.IsVisible(TR))
                     return TR.Location;
             goto Mark;

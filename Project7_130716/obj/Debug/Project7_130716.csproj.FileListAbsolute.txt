@@ -6,3 +6,4 @@ c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130
 c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\bin\Debug\Project7_130716.pdb
 c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\obj\Debug\Project7_130716.exe
 c:\users\oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\obj\Debug\Project7_130716.pdb
+C:\Users\Oleg\documents\visual studio 2013\Projects\Project7_130716\Project7_130716\obj\Debug\Project7_130716.Form1.resources

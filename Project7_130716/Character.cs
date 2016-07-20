@@ -99,7 +99,7 @@ namespace Project7_130716
         {
             if (ShieldDuration < 0)
             {
-                int HealthAfterDamage = Health - Damage;
+                int HealthAfterDamage = Health - Math.Abs(Damage);
                 Health = (Byte)HealthAfterDamage;
                 if (HealthAfterDamage <= 0)
                 {

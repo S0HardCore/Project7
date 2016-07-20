@@ -61,6 +61,7 @@ namespace Project7_130716
                         break;
                     case "REFRESH":
                         Form1.RefreshInventory();
+                        consoleLog = "Cooldown was reset.";
                         break;
                     case "QUIT":
                     case "EXIT":
