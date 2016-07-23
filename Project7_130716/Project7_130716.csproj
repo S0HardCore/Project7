@@ -104,9 +104,6 @@
     <None Include="Resources\IconPistol.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Railgun_icon.png" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Resources\IconGrenade.png" />
   </ItemGroup>
   <ItemGroup>
@@ -128,9 +125,6 @@
     <None Include="Resources\EffectBlinkGrenade.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\elementGlass035.png" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Resources\Backpack.png" />
   </ItemGroup>
   <ItemGroup>
@@ -144,6 +138,30 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\IconRailgun.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FreezeExplosion.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FreezeRifle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FrostGrenade.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FrozenBlock.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\StasisGrenade.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\SniperRifle.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FireGrenade.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\EffectFlame.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

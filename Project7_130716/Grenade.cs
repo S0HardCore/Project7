@@ -67,7 +67,7 @@ namespace Project7_130716
                 Timer += 0.01f;
                 HitBox.MakeEmpty();
                 GraphicsPath GP = new GraphicsPath();
-                GP.AddEllipse(Position.X, Position.Y, Form1.GRENADE_SIZE, Form1.GRENADE_SIZE);
+                GP.AddEllipse(Position.X - Form1.GRENADE_SIZE * 2, Position.Y - Form1.GRENADE_SIZE * 2, Form1.GRENADE_SIZE * 4, Form1.GRENADE_SIZE * 4);
                 HitBox = new Region(GP);
             }
         }

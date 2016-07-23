@@ -53,15 +53,19 @@ namespace Project7_130716
                     case "INFO":
                     case "DEBUGINFO":
                     case "DEBUGINFORMATION":
-                        if (Form1.ShowDI)
-                            Form1.ShowDI = false;
-                        else
-                            Form1.ShowDI = true;
-                        consoleLog = "Debug output is " + (Form1.ShowDI ? "enabled." : "disabled");
+                        Form1.ShowDI = !Form1.ShowDI;
+                        consoleLog = "Debug output is " + (Form1.ShowDI ? "enabled." : "disabled.");
                         break;
                     case "REFRESH":
                         Form1.RefreshInventory();
                         consoleLog = "Cooldown was reset.";
+                        break;
+                    case "WTF":
+                        Form1.ModeWTF = !Form1.ModeWTF;
+                        consoleLog = "WTF Mode is " + (Form1.ModeWTF ? "enabled." : "disabled.");
+                        break;
+                    case "RESET":
+                        Form1.InitialSetup();
                         break;
                     case "QUIT":
                     case "EXIT":

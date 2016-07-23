@@ -169,4 +169,28 @@
   <data name="IconRailgun" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\IconRailgun.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="EffectFlame" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\EffectFlame.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="EffectFreezeExplosion" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\FreezeExplosion.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="EffectFrozenBlock" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\FrozenBlock.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="IconFlameGrenade" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\FireGrenade.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="IconFreezeRifle" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\FreezeRifle.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="IconFrostGrenade" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\FrostGrenade.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="IconSniperRifle" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\SniperRifle.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="IconStasisGrenade" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\StasisGrenade.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

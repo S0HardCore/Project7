@@ -123,6 +123,36 @@ namespace Project7_130716.Properties {
         /// <summary>
         ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap EffectFlame {
+            get {
+                object obj = ResourceManager.GetObject("EffectFlame", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap EffectFreezeExplosion {
+            get {
+                object obj = ResourceManager.GetObject("EffectFreezeExplosion", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap EffectFrozenBlock {
+            get {
+                object obj = ResourceManager.GetObject("EffectFrozenBlock", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap EffectShield {
             get {
                 object obj = ResourceManager.GetObject("EffectShield", resourceCulture);
@@ -173,6 +203,36 @@ namespace Project7_130716.Properties {
         /// <summary>
         ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap IconFlameGrenade {
+            get {
+                object obj = ResourceManager.GetObject("IconFlameGrenade", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap IconFreezeRifle {
+            get {
+                object obj = ResourceManager.GetObject("IconFreezeRifle", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap IconFrostGrenade {
+            get {
+                object obj = ResourceManager.GetObject("IconFrostGrenade", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap IconGrenade {
             get {
                 object obj = ResourceManager.GetObject("IconGrenade", resourceCulture);
@@ -206,6 +266,26 @@ namespace Project7_130716.Properties {
         internal static System.Drawing.Bitmap IconShotgun {
             get {
                 object obj = ResourceManager.GetObject("IconShotgun", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap IconSniperRifle {
+            get {
+                object obj = ResourceManager.GetObject("IconSniperRifle", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Поиск локализованного ресурса типа System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap IconStasisGrenade {
+            get {
+                object obj = ResourceManager.GetObject("IconStasisGrenade", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

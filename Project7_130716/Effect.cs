@@ -6,15 +6,22 @@ namespace Project7_130716
 {
     class Effect
     {
-        public Boolean Exist = true;
-        public Boolean HitedOnce = false;
-        public Form1.EffectType Type;
-        public int Frames = 0;
-        public int MaxFrames;
-        public Rectangle Place;
-        public Point Position;
-        public Size Dimension;
-        public Image Source;
+        public Boolean
+            Exist = true,
+            HitedOnce = false;
+        public Form1.EffectType
+            Type;
+        public int
+            Frames = 0,
+            MaxFrames;
+        public Rectangle
+            Place;
+        public Point
+            Position;
+        public Size
+            Dimension;
+        public Image
+            Source;
 
         public Effect(Form1.EffectType _Type, Point _Position, Size _Dimension, Image _Source, int _MaxFrames)
         {
