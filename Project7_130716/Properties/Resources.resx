@@ -193,4 +193,13 @@
   <data name="IconStasisGrenade" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\StasisGrenade.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="FreezeGrenade" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\FreezeGrenade.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="EffectMiniStasis" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\EffectMiniStasis.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="EffectStasis" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\EffectStasis.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

@@ -66,6 +66,7 @@ namespace Project7_130716
                         break;
                     case "RESET":
                         Form1.InitialSetup();
+                        consoleLog = "Reset was succesful.";
                         break;
                     case "QUIT":
                     case "EXIT":

@@ -19,6 +19,7 @@ namespace Project7_130716
             SWORD_FRAMES = 6,
             EXPLOSION_FRAMES = 44,
             FREEZE_EXPLOSION_FRAMES = 25,
+            STASIS_FRAMES = 16,
             GRENADE_SIZE = 16,
             RAY_SIZE = 4,
             SHIELD_SIZE = 100,
@@ -43,6 +44,7 @@ namespace Project7_130716
             FREEZE_GRENADE_COOLDOWN = 13.4f,
             FREEZE_EFFECT_DURATION = 1.4f,
             STASIS_GRENADE_COOLDOWN = 8.3f,
+            STASIS_EFFECT_DURATION = 1.75f,
             FLAME_GRENADE_COOLDOWN = 9.9f,
             SNIPER_RIFLE_COOLDOWN = 18.2f,
             FLOATING_TEXT_DURATION = 0.83f;
@@ -58,9 +60,9 @@ namespace Project7_130716
                 12.5f,
                 17.3f,
                 13.4f,
-                1f,
-                1f,
-                1f
+                9.2f,
+                14.3f,
+                20.1f
             };
         public static readonly Size
             CHARACTER_SIZE = new Size(54, 26),
@@ -96,6 +98,7 @@ namespace Project7_130716
             Explosive,
             Blink,
             Freeze,
+            Stasis,
             Flame
         }
         public enum GunType
@@ -109,12 +112,14 @@ namespace Project7_130716
             Explosion,
             Teleportation,
             Freeze,
+            Stasis,
             Flame
         }
         public enum RayType
         {
             Railgun,
-            Freeze
+            Freeze,
+            Sniper
         }
         static Image[]
             BackpackIcons = new Image[12]
@@ -140,11 +145,14 @@ namespace Project7_130716
             iRightSword = Properties.Resources.RightSword,
             iExplosiveGrenade = Properties.Resources.ExplosiveGrenade,
             iBlinkGrenade = Properties.Resources.BlinkGrenade,
+            iFreezeGrenade = Properties.Resources.FreezeGrenade,
             iEffectExplosion = Properties.Resources.EffectExplosion,
             iEffectTeleportation = Properties.Resources.EffectBlinkGrenade,
             iEffectShield = Properties.Resources.EffectShield,
             iEffectFreezeExplosion = Properties.Resources.EffectFreezeExplosion,
             iEffectFrozenBlock = Properties.Resources.EffectFrozenBlock,
+            iEffectStasis = Properties.Resources.EffectStasis,
+            iEffectMiniStasis = Properties.Resources.EffectMiniStasis,
             iBackPack = Properties.Resources.Backpack,
             iConsole = Properties.Resources.GlassPanelConsole;
         static Timer
@@ -158,7 +166,9 @@ namespace Project7_130716
             swordFrames = 0;
         public static Boolean
             SwordUsed = false,
-            ModeWTF = false;
+            ModeWTF = false,
+            ShowDI = false,
+            InventoryControlMode = false;
         static HatchBrush
             MapBrush = new HatchBrush(HatchStyle.Trellis, Color.Black, Color.DarkSeaGreen);
         static Character
@@ -194,9 +204,6 @@ namespace Project7_130716
             Effects = new List<Effect>();
         static List<Ray>
             Rays = new List<Ray>();
-        public static
-            Boolean ShowDI = false,
-            InventoryControlMode = false;
         static ConsolePrototype
             Console = new ConsolePrototype();
         static Boolean[] 
@@ -235,7 +242,16 @@ namespace Project7_130716
             FloatingTexts.Clear();
             Projectiles.Clear();
             if (Player1 == null)
+            {
                 Player1 = new Character(250, 50);
+                for (int a = 0; a < 4; ++a)
+                {
+                    InventoryIcons[a] = BackpackIcons[a];
+                    INVENTORY_SLOTS[a] = new Rectangle(NewOffset(INVENTORY_INITIAL_POINT, a * (INVENTORY_SLOT_SIZE + INVENTORY_SLOTS_MARGIN), 0), InventorySlotSize);
+                }
+            }
+            else
+                Player1.Health = 100;
             ViewOffset = new Point(Resolution.Width / 2 - Player1.Position.X, Resolution.Height / 2 - Player1.Position.Y);
             Map.MakeEmpty();
             Map.Union(MAP_OUTTER);
@@ -249,11 +265,7 @@ namespace Project7_130716
             Map.Union(new Rectangle(480, 400, 20, 145));
 
             Map.Union(new Rectangle(800, 300, 300, 20));
-            for (int a = 0; a < 4; ++a)
-            {
-                InventoryIcons[a] = BackpackIcons[a];
-                INVENTORY_SLOTS[a] = new Rectangle(NewOffset(INVENTORY_INITIAL_POINT, a * (INVENTORY_SLOT_SIZE + INVENTORY_SLOTS_MARGIN), 0), InventorySlotSize);
-            }
+            Map.Union(new Rectangle(1095, 300, 5, 300));
         }
 
         void pMouseDown(object sender, MouseEventArgs e)
@@ -271,7 +283,7 @@ namespace Project7_130716
                                 else
                                 {
                                     ammoInCage--;
-                                    Projectiles.Add(new Projectile(Player1.Position, AngleBetween((PointF)OffsetByView(new Point(e.X + 16, e.Y + 16)), Player1.getCenterPointF())));
+                                    Projectiles.Add(new Projectile(Player1.Position, AngleBetween(OffsetByView(new Point(e.X + 16, e.Y + 16)), Player1.getCenterPointF())));
 
                                     if (ammoInCage == 0)
                                         Player1.Cooldowns[(int)Inventory.Pistol] = 0f;
@@ -292,7 +304,7 @@ namespace Project7_130716
                         case Inventory.Blink_Grenade:
                             if (Player1.Cooldowns[(int)Inventory.Blink_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Blink_Grenade])
                             {
-                                Grenades.Add(new Grenade(GrenadeType.Blink, NewOffset(Player1.Position, 26, -5), AngleBetween((PointF)OffsetByView(new Point(MousePosition.X + 16, MousePosition.Y + 16)), Player1.getCenterPointF()), 0f));
+                                Grenades.Add(new Grenade(GrenadeType.Blink, NewOffset(Player1.Position, 26, -5), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Player1.getCenterPointF()), 0f));
                                 Player1.Cooldowns[(int)Inventory.Blink_Grenade] = 0f;
                             }
                             break;
@@ -309,7 +321,7 @@ namespace Project7_130716
                             if (Player1.Cooldowns[(int)Inventory.Railgun] >= ITEMS_COOLDOWN[(int)Inventory.Railgun])
                             {
                                 Player1.Cooldowns[(int)Inventory.Railgun] = 0f;
-                                Rays.Add(new Ray(Player1.getCenterPointF(), AngleBetween((PointF)OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Player1.getCenterPointF()), Player1, RayType.Railgun, Map));
+                                Rays.Add(new Ray(Player1.getCenterPointF(), AngleBetween(OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Player1.getCenterPointF()), Player1, RayType.Railgun, Map));
                             }
                             break;
                         case Inventory.Shield:
@@ -322,9 +334,23 @@ namespace Project7_130716
                             if (Player1.Cooldowns[(int)Inventory.Freeze_Rifle] >= ITEMS_COOLDOWN[(int)Inventory.Freeze_Rifle])
                             {
                                 Player1.Cooldowns[(int)Inventory.Freeze_Rifle] = 0f;
-                                Ray temp_ray = new Ray(Player1.getCenterPointF(), AngleBetween((PointF)OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Player1.getCenterPointF()), Player1, RayType.Freeze, Map);
+                                Ray temp_ray = new Ray(Player1.getCenterPointF(), AngleBetween(OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Player1.getCenterPointF()), Player1, RayType.Freeze, Map);
                                 Rays.Add(temp_ray);
                                 Effects.Add(new Effect(EffectType.Freeze, new Rectangle(NewOffset(temp_ray.End, -32, -32), new Size(64, 64)), iEffectFreezeExplosion, FREEZE_EXPLOSION_FRAMES));
+                            }
+                            break;
+                        case Inventory.Freeze_Grenade:
+                            if (Player1.Cooldowns[(int)Inventory.Freeze_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Freeze_Grenade])
+                            {
+                                Player1.Cooldowns[(int)Inventory.Freeze_Grenade] = 0f;
+                                Grenades.Add(new Grenade(GrenadeType.Freeze, NewOffset(Player1.Position, 26, -5), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Player1.getCenterPointF()), 0f));
+                            }
+                            break;
+                        case Inventory.Stasis_Grenade:
+                            if (Player1.Cooldowns[(int)Inventory.Stasis_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Stasis_Grenade])
+                            {
+                                Player1.Cooldowns[(int)Inventory.Stasis_Grenade] = 0f;
+                                Grenades.Add(new Grenade(GrenadeType.Stasis, NewOffset(Player1.Position, 26, -5), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Player1.getCenterPointF()), 0f));
                             }
                             break;
                     }
@@ -359,7 +385,7 @@ namespace Project7_130716
                 Rectangle NewBackPack = BACKPACK_RECTANGLE;
                 NewBackPack.Location.Offset(10, 10);
                 NewBackPack.Inflate(-10, -10);
-                Boolean Determined = false;
+                bool Determined = false;
                 if (Player1.Backpack && NewBackPack.Contains(e.Location))
                     for (int a = 0; a < BackpackIcons.Length; ++a)
                         if (BACKPACK_SLOTS[a].Contains(e.Location))
@@ -382,9 +408,9 @@ namespace Project7_130716
                         Console.Close();
                     else
                         if (Player1.Backpack)
-                            Player1.Backpack = false;
-                        else
-                            Application.Exit();
+                        Player1.Backpack = false;
+                    else
+                        Application.Exit();
                     break;
                 case Keys.Tab:
                     if (!Console.Enabled)
@@ -420,11 +446,11 @@ namespace Project7_130716
                         CurrentItem = InventorySlots[0];
                     else
                         if (HoveredSlot != -1)
-                        {
-                            InventorySlots[0] = (Inventory)HoveredSlot;
-                            InventoryIcons[0] = BackpackIcons[HoveredSlot];
-                            CurrentItem = (Inventory)HoveredSlot;
-                        }
+                    {
+                        InventorySlots[0] = (Inventory)HoveredSlot;
+                        InventoryIcons[0] = BackpackIcons[HoveredSlot];
+                        CurrentItem = (Inventory)HoveredSlot;
+                    }
                     break;
                 case Keys.D2:
                     BackpackCurrentSlot = 1;
@@ -432,11 +458,11 @@ namespace Project7_130716
                         CurrentItem = InventorySlots[1];
                     else
                         if (HoveredSlot != -1)
-                        {
-                            InventorySlots[1] = (Inventory)HoveredSlot;
-                            InventoryIcons[1] = BackpackIcons[HoveredSlot];
-                            CurrentItem = (Inventory)HoveredSlot;
-                        }
+                    {
+                        InventorySlots[1] = (Inventory)HoveredSlot;
+                        InventoryIcons[1] = BackpackIcons[HoveredSlot];
+                        CurrentItem = (Inventory)HoveredSlot;
+                    }
                     break;
                 case Keys.D3:
                     BackpackCurrentSlot = 2;
@@ -444,11 +470,11 @@ namespace Project7_130716
                         CurrentItem = InventorySlots[2];
                     else
                         if (HoveredSlot != -1)
-                        {
-                            InventorySlots[2] = (Inventory)HoveredSlot;
-                            InventoryIcons[2] = BackpackIcons[HoveredSlot];
-                            CurrentItem = (Inventory)HoveredSlot;
-                        }
+                    {
+                        InventorySlots[2] = (Inventory)HoveredSlot;
+                        InventoryIcons[2] = BackpackIcons[HoveredSlot];
+                        CurrentItem = (Inventory)HoveredSlot;
+                    }
                     break;
                 case Keys.D4:
                     BackpackCurrentSlot = 3;
@@ -456,11 +482,11 @@ namespace Project7_130716
                         CurrentItem = InventorySlots[3];
                     else
                         if (HoveredSlot != -1)
-                        {
-                            InventorySlots[3] = (Inventory)HoveredSlot;
-                            InventoryIcons[3] = BackpackIcons[HoveredSlot];
-                            CurrentItem = (Inventory)HoveredSlot;
-                        }
+                    {
+                        InventorySlots[3] = (Inventory)HoveredSlot;
+                        InventoryIcons[3] = BackpackIcons[HoveredSlot];
+                        CurrentItem = (Inventory)HoveredSlot;
+                    }
                     break;
             }
         }
@@ -563,7 +589,7 @@ namespace Project7_130716
             if (Player1.ExplosiveGrenadeDown > EXPLOSIVE_GRENADE_DURATION - 0.01f)
                 GrenadeThrow(true);
             ViewOffset = new Point(Resolution.Width / 2 - Player1.Position.X, Resolution.Height / 2 - Player1.Position.Y);
-            if (Player1.RespawnTimer < 0 && Player1.FreezeDuration < 0)
+            if (Player1.RespawnTimer < 0 && Player1.FreezeDuration < 0 && Player1.StasisDuration < 0)
             {
                 if (SwordUsed)
                     if (swordFrames < SWORD_FRAMES)
@@ -581,22 +607,35 @@ namespace Project7_130716
                     if (Player1.JumpProgress == -1 && Player1.AtGround)
                         Player1.JumpProgress++;
             }
+            int temp = 0;
+            for (int a = 0; a < Rays.Count; ++a)
+                if (Rays[a].Type == RayType.Sniper)
+                    temp++;
             for (int b = 0; b < Rays.Count; ++b)
-                if (!Rays[b].Exist)
+                if (!Rays[b].Exist || (Rays[b].Type == RayType.Sniper && (CurrentItem != Inventory.Sniper_Rifle || temp > 1)))
                     Rays.Remove(Rays[b]);
             for (int b = 0; b < Grenades.Count; ++b)
                 if (Grenades[b].Exist)
                     Grenades[b].Move(Map);
                 else
                 {
-                    if (Grenades[b].Type == GrenadeType.Explosive)
-                        Effects.Add(new Effect(EffectType.Explosion, NewOffset(Grenades[b].Position, -48, -48), new Size(96, 96), iEffectExplosion, 44));
-                    else
+                    switch (Grenades[b].Type)
                     {
-                        Effects.Add(new Effect(EffectType.Teleportation, NewOffset(Player1.Position, -17, -6), new Size(64, 64), iEffectTeleportation, 16));
-                        Image rev = iEffectTeleportation;
-                        rev.RotateFlip(RotateFlipType.RotateNoneFlipX);
-                        Effects.Add(new Effect(EffectType.Teleportation, NewOffset(Grenades[b].Position, -45, -61), new Size(64, 64), rev, 16));
+                        case GrenadeType.Explosive:
+                            Effects.Add(new Effect(EffectType.Explosion, NewOffset(Grenades[b].Position, -48, -48), new Size(96, 96), iEffectExplosion, 44));
+                            break;
+                        case GrenadeType.Blink:
+                            Effects.Add(new Effect(EffectType.Teleportation, NewOffset(Player1.Position, -17, -6), new Size(64, 64), iEffectTeleportation, 16));
+                            Image rev = iEffectTeleportation;
+                            rev.RotateFlip(RotateFlipType.RotateNoneFlipX);
+                            Effects.Add(new Effect(EffectType.Teleportation, NewOffset(Grenades[b].Position, -45, -61), new Size(64, 64), rev, 16));
+                            break;
+                        case GrenadeType.Freeze:
+                            Effects.Add(new Effect(EffectType.Freeze, new Rectangle(NewOffset(Grenades[b].Position, -48, -48), new Size(96, 96)), iEffectFreezeExplosion, FREEZE_EXPLOSION_FRAMES));
+                            break;
+                        case GrenadeType.Stasis:
+                            Effects.Add(new Effect(EffectType.Stasis, new Rectangle(NewOffset(Grenades[b].Position, -64, -64), new Size(128, 128)), iEffectStasis, STASIS_FRAMES));
+                            break;
                     }
                     Grenades.Remove(Grenades[b]);
                 }
@@ -637,8 +676,11 @@ namespace Project7_130716
                 }
                 else
                     Projectiles.Remove(Projectiles[p]);
-            Player1.FallIfCan(Map);
-            Player1.JumpIfCan(Map);
+            if (Player1.StasisDuration < 0)
+            {
+                Player1.FallIfCan(Map);
+                Player1.JumpIfCan(Map);
+            }
             for (int a = 0; a < FloatingTexts.Count; ++a)
                 if (FloatingTexts[a].Exist)
                     FloatingTexts[a].Refresh();
@@ -651,29 +693,35 @@ namespace Project7_130716
         void pDraw(object sender, PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            if (Control.IsKeyLocked(Keys.Scroll))
+            if (IsKeyLocked(Keys.Scroll))
                 g.ScaleTransform(0.5f, 0.5f);
             g.TranslateTransform(ViewOffset.X, ViewOffset.Y);
             foreach (Ray TR in Rays)
                 if (TR.Exist)
                 {
                     TR.Refresh(Player1);
-                    if (TR.Type == RayType.Railgun)
+                    switch (TR.Type)
                     {
-                        if (TR.RayRegion.IsVisible(Player1.Body.GetBounds(g)) && Player1 != TR.Initiator)
-                            Player1.DoDamage(33);
-                        if (!TR.Excluded)
-                        {
-                            Map.Exclude(TR.RayRegion);
-                            TR.Excluded = true;
-                        }
+                        case RayType.Railgun:
+                            if (TR.RayRegion.IsVisible(Player1.Body.GetBounds(g)) && Player1 != TR.Initiator)
+                                Player1.DoDamage(33);
+                            if (!TR.Excluded)
+                            {
+                                Map.Exclude(TR.RayRegion);
+                                TR.Excluded = true;
+                            }
+                            break;
+                        case RayType.Freeze:
+                            if (TR.RayRegion.IsVisible(Player1.Body.GetBounds(g)) && Player1 != TR.Initiator)
+                            {
+                                Player1.FreezeDuration = 0f;
+                            }
+                            break;
                     }
+                    if (TR.Type != RayType.Sniper)
+                        g.FillRegion(TR.Type == RayType.Railgun ? Brushes.CornflowerBlue : new LinearGradientBrush(TR.Start, TR.End, Color.LightCyan, Color.LightBlue), TR.RayRegion);
                     else
-                        if (TR.RayRegion.IsVisible(Player1.Body.GetBounds(g)) && Player1 != TR.Initiator)
-                        {
-                            Player1.FreezeDuration = 0f;
-                        }
-                    g.FillRegion(TR.Type == RayType.Railgun ? Brushes.CornflowerBlue : new LinearGradientBrush(TR.Start, TR.End, Color.LightCyan, Color.LightBlue) , TR.RayRegion);
+                        g.DrawLine(Pens.Red, TR.Start, TR.End);
                 }
             g.FillRegion(MapBrush, Map);
             if (Player1.RespawnTimer < 0)
@@ -681,29 +729,56 @@ namespace Project7_130716
                 g.DrawString(Player1.Health.ToString(), new Font(QuartzFont, 11), Player1.getHealthBrush(), Player1.getHealthRectangleF(), MiddleText);
                 g.FillRegion(Brushes.Orange, Player1.Body);
                 Rectangle SwordRectangle, SwordFrame;
-                if (CurrentItem == Inventory.Sword)
-                    if (Player1.Rotation)
-                    {
-                        SwordRectangle = new Rectangle(Player1.Position.X + 21, Player1.Position.Y + 6, 37, 28);
-                        SwordFrame = new Rectangle(37 * (swordFrames / 2), 0, 37, 28);
-                        g.DrawImage(iRightSword, SwordRectangle, SwordFrame, GraphicsUnit.Pixel);
-                    }
-                    else
-                    {
-                        SwordRectangle = new Rectangle(Player1.Position.X - 32, Player1.Position.Y + 6, 37, 28);
-                        SwordFrame = new Rectangle(74 - 37 * (swordFrames / 2), 0, 37, 28);
-                        g.DrawImage(iLeftSword, SwordRectangle, SwordFrame, GraphicsUnit.Pixel);
-                    }
+                switch (CurrentItem)
+                {
+                    case Inventory.Sword:
+                        if (Player1.Rotation)
+                        {
+                            SwordRectangle = new Rectangle(Player1.Position.X + 21, Player1.Position.Y + 6, 37, 28);
+                            SwordFrame = new Rectangle(37 * (swordFrames / 2), 0, 37, 28);
+                            g.DrawImage(iRightSword, SwordRectangle, SwordFrame, GraphicsUnit.Pixel);
+                        }
+                        else
+                        {
+                            SwordRectangle = new Rectangle(Player1.Position.X - 32, Player1.Position.Y + 6, 37, 28);
+                            SwordFrame = new Rectangle(74 - 37 * (swordFrames / 2), 0, 37, 28);
+                            g.DrawImage(iLeftSword, SwordRectangle, SwordFrame, GraphicsUnit.Pixel);
+                        }
+                        break;
+                    case Inventory.Sniper_Rifle:
+                        Rays.Add(new Ray(Player1.getCenterPointF(), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Player1.getCenterPointF()), Player1, RayType.Sniper, Map));
+                        break;
+                }
                 if (Player1.FreezeDuration > -0.01f)
                     g.DrawImage(iEffectFrozenBlock, Player1.Position.X - 3, Player1.Position.Y + 22, 32, 32);
                 if (Player1.ShieldDuration > -0.01f)
                     g.DrawImage(iEffectShield, Player1.Shield.GetBounds(g));
+                if (Player1.StasisDuration > -0.01f)
+                {
+                    Rectangle EffectFrame = new Rectangle(40 * (int)(Player1.StasisDuration / 0.22f), 0, 40, 64);
+                    g.DrawImage(iEffectMiniStasis, new Rectangle(Player1.Position.X - 7, Player1.Position.Y - 4, 40, 64), EffectFrame, GraphicsUnit.Pixel);
+                }
             }
             else
                 g.DrawImage(iSkull, Player1.getPlaceForSkull());
             foreach (Grenade TG in Grenades)
                 if (TG.Exist)
-                    g.DrawImage(TG.Type == GrenadeType.Explosive ? iExplosiveGrenade : iBlinkGrenade, TG.Position.X, TG.Position.Y, GRENADE_SIZE, GRENADE_SIZE);
+                {
+                    Image GrenadeImage = iExplosiveGrenade;
+                    switch (TG.Type)
+                    {
+                        case GrenadeType.Blink:
+                            GrenadeImage = iBlinkGrenade;
+                            break;
+                        case GrenadeType.Freeze:
+                            GrenadeImage = iFreezeGrenade;
+                            break;
+                        case GrenadeType.Stasis:
+                            GrenadeImage = Properties.Resources.IconStasisGrenade;
+                            break;
+                    }
+                    g.DrawImage(GrenadeImage, TG.Position.X, TG.Position.Y, GRENADE_SIZE, GRENADE_SIZE);
+                }
                 else
                     if (TG.Type == GrenadeType.Explosive)
                         Map.Exclude(TG.HitBox);
@@ -750,6 +825,18 @@ namespace Project7_130716
                                 Effects[b].HitedOnce = true;
                             }
                             break;
+                        case EffectType.Stasis:
+                            if (Player1.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce && Player1.ShieldDuration < 0)
+                            {
+                                Player1.StasisDuration = 0f;
+                                int damage = 15 + getRandom.Next(-5, 6);
+                                if (Player1.Health - damage < 1)
+                                    damage--;
+                                Player1.DoDamage(damage);
+                                FloatingTexts.Add(new FloatingText(new Point(Player1.Position.X + 10, Player1.Position.Y - 10), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION));
+                                Effects[b].HitedOnce = true;
+                            }
+                            break;
                     }
                 }
                 else
@@ -772,7 +859,7 @@ namespace Project7_130716
                     g.DrawRectangle(Pens.Black, INVENTORY_SLOTS[a]);
                 }
                 string CDoutput = "";
-                if (a != 0)
+                if (InventorySlots[a] != Inventory.Sword)
                 {
                     if (InventorySlots[a] == Inventory.Pistol)
                     {
@@ -815,7 +902,7 @@ namespace Project7_130716
                 g.FillRectangle(new SolidBrush(Color.FromArgb(64, 0, 0, 0)), FPS_RECTANGLE);
                 g.DrawString(CalculateFrameRate().ToString(), new Font(QuartzFont, 13), Brushes.White, (RectangleF)FPS_RECTANGLE, MiddleText);
                 string output = "Player 1 Position: " + Player1.Position.ToString() + "\n" +
-                    "View Offset: " + ViewOffset.ToString() + "\n" + Player1.ExplosiveGrenadeDown.ToString() + "\n";
+                    "View Offset: " + ViewOffset.ToString() + "\n" + Rays.Count.ToString() + "\n";
                 for (int i = 0; i < 4; ++i)
                     output += InventorySlots[i].ToString() + "\n";
                 for (int b = 0; b < BackpackIcons.Length; ++b)

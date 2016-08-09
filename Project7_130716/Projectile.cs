@@ -33,7 +33,11 @@ namespace Project7_130716
         }
         public void Move(Region _Map, Region _Shield)
         {
-            PointF next = new PointF(Position.X + Form1.Cos(Direction) * Form1.PROJECTILE_VELOCITY, Position.Y + Form1.Sin(Direction) * Form1.PROJECTILE_VELOCITY);
+            PointF next = new PointF(Position.X + Form1.Cos(Direction) * (Form1.PROJECTILE_VELOCITY / 2), Position.Y + Form1.Sin(Direction) * (Form1.PROJECTILE_VELOCITY / 2));
+            if (!_Map.IsVisible(next))
+                next = new PointF(Position.X + Form1.Cos(Direction) * Form1.PROJECTILE_VELOCITY, Position.Y + Form1.Sin(Direction) * Form1.PROJECTILE_VELOCITY);
+            else
+                Exist = false;
             if (_Shield.IsVisible(next))
                 Exist = false;
             if (_Map.IsVisible(next))

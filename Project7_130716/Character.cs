@@ -26,34 +26,12 @@ namespace Project7_130716
             Legs = new Region(new Rectangle(-1, -1, 1, 1)),
             Shield = new Region(new Rectangle(-1, -1, 1, 1));
         public float[]
-            Cooldowns = new float[12]
-            {
-                Form1.PROJECTILE_COOLDOWN,
-                Form1.PISTOL_RELOAD_COOLDOWN,
-                Form1.EXPLOSIVE_GRENADE_COOLDOWN,
-                Form1.BLINK_GRENADE_COOLDOWN,
-                Form1.SHOTGUN_RELOAD_COOLDOWN,
-                Form1.RAILGUN_COOLDOWN,
-                Form1.SHIELD_COOLDOWN,
-                Form1.FREEZE_RIFLE_COOLDOWN,
-                Form1.FREEZE_GRENADE_COOLDOWN,
-                Form1.STASIS_GRENADE_COOLDOWN,
-                Form1.FLAME_GRENADE_COOLDOWN,
-                Form1.SNIPER_RIFLE_COOLDOWN
-            };
+            Cooldowns = new float[12];
         public float
-            ProjectileCooldown = Form1.PROJECTILE_COOLDOWN,
-            PistolReload = Form1.PISTOL_RELOAD_COOLDOWN,
-            ExplosiveGrenadeCooldown = Form1.EXPLOSIVE_GRENADE_COOLDOWN,
             ExplosiveGrenadeDown = -0.01f,
-            BlinkGrenadeCooldown = Form1.BLINK_GRENADE_COOLDOWN,
-            ShotgunReload = Form1.SHOTGUN_RELOAD_COOLDOWN,
-            RailgunCooldown = Form1.RAILGUN_COOLDOWN,
-            ShieldCooldown = Form1.SHIELD_COOLDOWN,
             ShieldDuration = -0.01f,
-            FreezeRifleCooldown = Form1.FREEZE_RIFLE_COOLDOWN,
-            FreezeGrenadeCooldown = Form1.FREEZE_GRENADE_COOLDOWN,
-            FreezeDuration = -0.01f;
+            FreezeDuration = -0.01f,
+            StasisDuration = -0.01f;
         
         public void RefreshBody()
         {
@@ -101,13 +79,19 @@ namespace Project7_130716
                     if (FreezeDuration >= Form1.FREEZE_EFFECT_DURATION)
                         FreezeDuration = -0.01f;
                 }
+                if (StasisDuration > -0.01f)
+                {
+                    StasisDuration += 0.01f;
+                    if (StasisDuration >= Form1.STASIS_EFFECT_DURATION)
+                        StasisDuration = -0.01f;
+                }
             }
             else
                 if (RespawnTimer < Form1.CHARACTER_RESPAWN_DURATION)
                     RespawnTimer += 0.01f;
                 else
                 {
-                    RespawnTimer = ShieldDuration = FreezeDuration = -0.01f;
+                    RespawnTimer = ShieldDuration = FreezeDuration = StasisDuration = -0.01f;
                     Health = 100;
                     Position = Form1.getRandomLocationOnMap();
                 }
@@ -135,8 +119,8 @@ namespace Project7_130716
             return true;
         }
 
-        public Character(Point _Position) { Position = _Position; RefreshBody(); }
-        public Character(int x, int y) { Position = new Point(x, y); RefreshBody(); }
+        public Character(Point _Position) { Position = _Position; RefreshBody(); for (int a = 0; a < Cooldowns.Length; ++a) Cooldowns[a] = 60f; }
+        public Character(int x, int y) { Position = new Point(x, y); RefreshBody(); for (int a = 0; a < Cooldowns.Length; ++a) Cooldowns[a] = 60f; }
 
         public void CooldownIncrease(float _value)
         {
