@@ -202,4 +202,19 @@
   <data name="EffectStasis" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\EffectStasis.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="EffectFlameSmall" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\EffectFlameSmall.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="IconFragGrenade" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\IconFragGrenade.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="IconJetPack" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\JetPackIcon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="IconPlasmaBlaster" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\PlasmaBlaster.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="IconFlamingPunch" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\IconFlamingPunch.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

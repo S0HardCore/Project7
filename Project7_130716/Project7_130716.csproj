@@ -55,6 +55,7 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Grenade.cs" />
+    <Compile Include="KnockbackSystem.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Projectile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -171,6 +172,21 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\EffectMiniStasis.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\JetPackIcon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\PlasmaBlaster.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\IconFragGrenade.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\EffectFlameSmall.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\IconFlamingPunch.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

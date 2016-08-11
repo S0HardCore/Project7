@@ -8,15 +8,17 @@ namespace Project7_130716
     {
         public Point 
             Position;
-        public Byte
+        public byte
             Health = 100;
-        public Boolean
+        public bool
             Rotation = true,
             AtGround = false,
-            Backpack = false;
+            Backpack = false,
+            Fly = false;
         public int 
             JumpProgress = -1;
         public float 
+            Speedometer = 0f,
             RespawnTimer = -0.01f;
         public Region
             Body = new Region(new Rectangle(-1, -1, 1, 1)),
@@ -26,12 +28,13 @@ namespace Project7_130716
             Legs = new Region(new Rectangle(-1, -1, 1, 1)),
             Shield = new Region(new Rectangle(-1, -1, 1, 1));
         public float[]
-            Cooldowns = new float[12];
+            Cooldowns = new float[Form1.BackpackIcons.Length];
         public float
             ExplosiveGrenadeDown = -0.01f,
             ShieldDuration = -0.01f,
             FreezeDuration = -0.01f,
-            StasisDuration = -0.01f;
+            StasisDuration = -0.01f,
+            JetPackFuel = Form1.JETPACK_MAX_FUEL;
         
         public void RefreshBody()
         {
@@ -64,6 +67,8 @@ namespace Project7_130716
                 Body.Union(Chest);
                 Body.Union(Arms);
                 Body.Union(Legs);
+                if (JetPackFuel < Form1.JETPACK_MAX_FUEL)
+                    JetPackFuel += 0.1f;
                 if (ShieldDuration > -0.01f)
                 {
                     ShieldDuration += 0.01f;
@@ -88,13 +93,15 @@ namespace Project7_130716
             }
             else
                 if (RespawnTimer < Form1.CHARACTER_RESPAWN_DURATION)
-                    RespawnTimer += 0.01f;
-                else
-                {
-                    RespawnTimer = ShieldDuration = FreezeDuration = StasisDuration = -0.01f;
-                    Health = 100;
-                    Position = Form1.getRandomLocationOnMap();
-                }
+                RespawnTimer += 0.01f;
+            else
+            {
+                RespawnTimer = ShieldDuration = FreezeDuration = StasisDuration = -0.01f;
+                JetPackFuel = Form1.JETPACK_MAX_FUEL;
+                CooldownIncrease(-1f);
+                Health = 100;
+                Position = Form1.getRandomLocationOnMap();
+            }
         }
         public string WhereHit(PointF _Point)
         {
@@ -104,7 +111,7 @@ namespace Project7_130716
             if (Legs.IsVisible(_Point)) return "leg";
             return "none";
         }
-        public Boolean DoDamage(int Damage)
+        public bool DoDamage(int Damage)
         {
             if (ShieldDuration < 0)
             {
@@ -126,7 +133,10 @@ namespace Project7_130716
         {
             for (int a = 0; a < Cooldowns.Length; ++a)
                 if (_value == -1f)
+                {
                     Cooldowns[a] = 60f;
+                    JetPackFuel = Form1.JETPACK_MAX_FUEL;
+                }
                 else
                     Cooldowns[a] += _value;
 
