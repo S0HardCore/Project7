@@ -12,7 +12,7 @@ namespace Project7_130716
             CHARACTER_VERTICAL_VELOCITY = 5,
             CHARACTER_HORIZONTAL_VELOCITY = 5,
             CHARACTER_JUMP_LENGTH = 140,
-            PROJECTILE_VELOCITY = 23,
+            PROJECTILE_VELOCITY = 15,
             PROJECTILE_SIZE = 4,
             PROJECTILE_RICOCHET_RANGE = 5,
             PISTOL_CAGE = 6,
@@ -165,11 +165,9 @@ namespace Project7_130716
             QuartzFont = "Quartz MS";
         static int
             lastTick, lastFrameRate, frameRate,
-            HoveredSlot = -1, BackpackCurrentSlot = 0,
-            ammoInCage = 6,
-            swordFrames = 0;
+            botIndex = 1,
+            HoveredSlot = -1, BackpackCurrentSlot = 0;
         public static bool
-            SwordUsed = false,
             ModeWTF = false,
             ShowDI = false,
             InventoryControlMode = false;
@@ -194,8 +192,6 @@ namespace Project7_130716
                 Inventory.Explosive_Grenade,
                 Inventory.Blink_Grenade
             };
-        static Inventory
-            CurrentItem = Inventory.Sword;
         static List<Projectile>
             Projectiles = new List<Projectile>();
         static List<FloatingText>
@@ -251,6 +247,8 @@ namespace Project7_130716
             {
                 Players.Add(new Character(250, 50));
                 Players.Add(new Character(400, 50));
+                Players.Add(new Character(100, 50));
+                Players.Add(new Character(700, 50));
                 for (int a = 0; a < 4; ++a)
                 {
                     InventoryIcons[a] = BackpackIcons[a];
@@ -279,29 +277,41 @@ namespace Project7_130716
         {
             if (e.Button == MouseButtons.Left)
                 if (Players[0].FreezeDuration < 0 && Players[0].RespawnTimer < 0 && !Players[0].Backpack)
-                    switch (CurrentItem)
+                    switch (Players[0].CurrentItem)
                     {
                         case Inventory.Pistol:
                             if (Players[0].Cooldowns[0] >= ITEMS_COOLDOWN[0])
                             {
                                 Players[0].Cooldowns[0] = 0f;
-                                if (ammoInCage < 1)
+                                if (Players[0].ammoInCage < 1)
                                     FloatingTexts.Add(new FloatingText(NewOffset(Players[0].Position, -32, -25), Color.CadetBlue, "Reloading", new Font(QuartzFont, 13), 0.3f));
                                 else
                                 {
-                                    ammoInCage--;
+                                    Players[0].ammoInCage--;
                                     Projectiles.Add(new Projectile(Players[0].Position, AngleBetween(OffsetByView(new Point(e.X + 16, e.Y + 16)), Players[0].getCenterPointF())));
 
-                                    if (ammoInCage == 0)
+                                    if (Players[0].ammoInCage == 0)
                                         Players[0].Cooldowns[(int)Inventory.Pistol] = 0f;
                                 }
                             }
                             break;
                         case Inventory.Sword:
-                            if (!SwordUsed)
+                            if (!Players[0].SwordUsed)
                             {
-                                SwordUsed = true;
-                                swordFrames = 0;
+                                Players[0].SwordUsed = true;
+                                Players[0].swordFrames = 0;
+                                foreach (Character TC in Players)
+                                {
+                                    Rectangle SwordHitbox = new Rectangle(NewOffset(Players[0].Position, Players[0].Rotation ? 26 : -26, 26), (Players[0].Rotation ? new Size(35, 35) : new Size(26, 26)));
+                                    if (SwordHitbox.IntersectsWith(new Rectangle(TC.Position, new Size(26, 54))) && TC != Players[0] && TC.ShieldDuration < 0f && TC.RespawnTimer < 0f)
+                                    {
+                                        int damage = getRandom.Next(8) + 8;
+                                        bool LethalDamage = TC.DoDamage(damage);
+                                        FloatingTexts.Add(new FloatingText(new Point(TC.Position.X + 10, TC.Position.Y - 20), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION / (LethalDamage ? 3 : 1)));
+                                        if (!LethalDamage)
+                                            FloatingTexts.Add(new FloatingText(new Point(TC.Position.X - 25, TC.Position.Y - 30), Color.FromArgb(255, 0, 192, 0), "Respawn", new Font(QuartzFont, 16), CHARACTER_RESPAWN_DURATION));
+                                    }
+                                }
                             }
                             break;
                         case Inventory.Explosive_Grenade:
@@ -328,7 +338,7 @@ namespace Project7_130716
                             if (Players[0].Cooldowns[(int)Inventory.Railgun] >= ITEMS_COOLDOWN[(int)Inventory.Railgun])
                             {
                                 Players[0].Cooldowns[(int)Inventory.Railgun] = 0f;
-                                Rays.Add(new Ray(Players[0].getCenterPointF(), AngleBetween(OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Players[0].getCenterPointF()), Players[0], RayType.Railgun, Map));
+                                Rays.Add(new Ray(Players[0].getCenterPointF(), AngleBetween(OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Players[0].getCenterPointF()), Players, Players[0], RayType.Railgun, Map));
                             }
                             break;
                         case Inventory.Shield:
@@ -341,7 +351,7 @@ namespace Project7_130716
                             if (Players[0].Cooldowns[(int)Inventory.Freeze_Rifle] >= ITEMS_COOLDOWN[(int)Inventory.Freeze_Rifle])
                             {
                                 Players[0].Cooldowns[(int)Inventory.Freeze_Rifle] = 0f;
-                                Ray temp_ray = new Ray(Players[0].getCenterPointF(), AngleBetween(OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Players[0].getCenterPointF()), Players[0], RayType.Freeze, Map);
+                                Ray temp_ray = new Ray(Players[0].getCenterPointF(), AngleBetween(OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Players[0].getCenterPointF()), Players, Players[0], RayType.Freeze, Map);
                                 Rays.Add(temp_ray);
                                 Effects.Add(new Effect(EffectType.Freeze, new Rectangle(NewOffset(temp_ray.End, -32, -32), new Size(64, 64)), iEffectFreezeExplosion, FREEZE_EXPLOSION_FRAMES));
                             }
@@ -360,20 +370,61 @@ namespace Project7_130716
                                 Grenades.Add(new Grenade(GrenadeType.Stasis, NewOffset(Players[0].Position, 26, -5), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[0].getCenterPointF()), 0f));
                             }
                             break;
+                        case Inventory.Sniper_Rifle:
+                            if (Players[0].Cooldowns[(int)Inventory.Sniper_Rifle] >= ITEMS_COOLDOWN[(int)Inventory.Sniper_Rifle])
+                            {
+                                Players[0].Cooldowns[(int)Inventory.Sniper_Rifle] = 0f;
+                                for (int a = 0; a < Rays.Count; ++a)
+                                    if (Rays[a].Type == RayType.Sniper && Rays[a].Initiator == Players[0])
+                                        foreach (Character TC in Players)
+                                            if (Rays[a].RayRegion.IsVisible(new Rectangle(TC.Position, new Size(26, 54))) && TC != Rays[a].Initiator && TC.RespawnTimer <0f)
+                                            {
+                                                bool LethalDamage = TC.DoDamage(100);
+                                                if (!LethalDamage)
+                                                    FloatingTexts.Add(new FloatingText(new Point(TC.Position.X - 25, TC.Position.Y - 30), Color.FromArgb(255, 0, 192, 0), "Respawn", new Font(QuartzFont, 16), CHARACTER_RESPAWN_DURATION));
+                                                FloatingTexts.Add(new FloatingText(new Point(TC.Position.X + 10, TC.Position.Y - 10), Color.FromArgb(255, 192, 0, 0), "100", new Font(QuartzFont, 14), FLOATING_TEXT_DURATION / (LethalDamage ? 3 : 1)));
+                                            }
+                            }
+                            break;
+                        case Inventory.Flaming_Fist:
+                            if (Players[0].Cooldowns[(int)Inventory.Flaming_Fist] >= ITEMS_COOLDOWN[(int)Inventory.Flaming_Fist])
+                            {
+                                Players[0].Cooldowns[(int)Inventory.Flaming_Fist] = 0f;
+                                foreach (Character TC in Players)
+                                {
+                                    Rectangle FistHitbox = new Rectangle(NewOffset(Players[0].Position, Players[0].Rotation ? 20 : -14, 20), (Players[0].Rotation ? new Size(30, 30) : new Size(26, 26)));
+                                    if (FistHitbox.IntersectsWith(new Rectangle(TC.Position, new Size(26, 54))) && TC != Players[0] && TC.ShieldDuration < 0f && TC.RespawnTimer < 0f)
+                                    {
+                                        float Direction = AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[0].getCenterPointF());
+                                        //MessageBox.Show(Direction.ToString());
+                                        Knockbacks.Add(new KnockbackSystem(TC, 35f, Direction, 1f));
+                                        int damage = getRandom.Next(10) + 30;
+                                        bool LethalDamage = TC.DoDamage(damage);
+                                        FloatingTexts.Add(new FloatingText(new Point(TC.Position.X + 10, TC.Position.Y - 20), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION / (LethalDamage ? 3 : 1)));
+                                        if (!LethalDamage)
+                                            FloatingTexts.Add(new FloatingText(new Point(TC.Position.X - 25, TC.Position.Y - 30), Color.FromArgb(255, 0, 192, 0), "Respawn", new Font(QuartzFont, 16), CHARACTER_RESPAWN_DURATION));
+                                    }
+                                }
+                            }
+                            break;
                     }
         }
 
         void pMouseUp(object sender, MouseEventArgs e)
         {
+            if (e.Button == MouseButtons.Middle)
+                Players[botIndex].Position = OffsetByView(e.Location);
+            else
             if (e.Button == MouseButtons.Right && !Players[0].Backpack)
                 Players[0].Position = OffsetByView(e.Location);
+            else
             if (e.Button == MouseButtons.Left)
                 if (Players[0].RespawnTimer < 0 && !Players[0].Backpack)
-                    switch (CurrentItem)
+                    switch (Players[0].CurrentItem)
                     {
                         case Inventory.Explosive_Grenade:
                             if (Players[0].ExplosiveGrenadeDown >= 0f && Players[0].Cooldowns[(int)Inventory.Explosive_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Explosive_Grenade])
-                                    GrenadeThrow(false);
+                                GrenadeThrow(false);
                             break;
                     }
         }
@@ -410,6 +461,18 @@ namespace Project7_130716
         {
             switch (e.KeyData)
             {
+                case Keys.F9:
+                    if (Players.Count > 1)
+                        botIndex = 1;
+                    break;
+                case Keys.F10:
+                    if (Players.Count > 2)
+                        botIndex = 2;
+                    break;
+                case Keys.F11:
+                    if (Players.Count > 3)
+                        botIndex = 3;
+                    break;
                 case Keys.Escape:
                     if (Console.Enabled)
                         Console.Close();
@@ -442,7 +505,7 @@ namespace Project7_130716
                     {
                         Players[0].Backpack = !Players[0].Backpack;
                         if (Players[0].Backpack)
-                            HoveredSlot = (int)CurrentItem;
+                            HoveredSlot = (int)Players[0].CurrentItem;
                         for (int a = 0; a < 3; ++a)
                             KeysDown[a] = false;
                     }
@@ -450,49 +513,49 @@ namespace Project7_130716
                 case Keys.D1:
                     BackpackCurrentSlot = 0;
                     if (!Players[0].Backpack)
-                        CurrentItem = InventorySlots[0];
+                        Players[0].CurrentItem = InventorySlots[0];
                     else
                         if (HoveredSlot != -1)
                     {
                         InventorySlots[0] = (Inventory)HoveredSlot;
                         InventoryIcons[0] = BackpackIcons[HoveredSlot];
-                        CurrentItem = (Inventory)HoveredSlot;
+                        Players[0].CurrentItem = (Inventory)HoveredSlot;
                     }
                     break;
                 case Keys.D2:
                     BackpackCurrentSlot = 1;
                     if (!Players[0].Backpack)
-                        CurrentItem = InventorySlots[1];
+                        Players[0].CurrentItem = InventorySlots[1];
                     else
                         if (HoveredSlot != -1)
                     {
                         InventorySlots[1] = (Inventory)HoveredSlot;
                         InventoryIcons[1] = BackpackIcons[HoveredSlot];
-                        CurrentItem = (Inventory)HoveredSlot;
+                        Players[0].CurrentItem = (Inventory)HoveredSlot;
                     }
                     break;
                 case Keys.D3:
                     BackpackCurrentSlot = 2;
                     if (!Players[0].Backpack)
-                        CurrentItem = InventorySlots[2];
+                        Players[0].CurrentItem = InventorySlots[2];
                     else
                         if (HoveredSlot != -1)
                     {
                         InventorySlots[2] = (Inventory)HoveredSlot;
                         InventoryIcons[2] = BackpackIcons[HoveredSlot];
-                        CurrentItem = (Inventory)HoveredSlot;
+                        Players[0].CurrentItem = (Inventory)HoveredSlot;
                     }
                     break;
                 case Keys.D4:
                     BackpackCurrentSlot = 3;
                     if (!Players[0].Backpack)
-                        CurrentItem = InventorySlots[3];
+                        Players[0].CurrentItem = InventorySlots[3];
                     else
                         if (HoveredSlot != -1)
                     {
                         InventorySlots[3] = (Inventory)HoveredSlot;
                         InventoryIcons[3] = BackpackIcons[HoveredSlot];
-                        CurrentItem = (Inventory)HoveredSlot;
+                        Players[0].CurrentItem = (Inventory)HoveredSlot;
                     }
                     break;
             }
@@ -526,7 +589,7 @@ namespace Project7_130716
                         Knockbacks.Add(new KnockbackSystem(Players[0], 50f, AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[0].getCenterPointF()), 1f));
                         break;
                     case Keys.Enter:
-                        CurrentItem = (Inventory)HoveredSlot;
+                        Players[0].CurrentItem = (Inventory)HoveredSlot;
                         InventoryIcons[BackpackCurrentSlot] = BackpackIcons[HoveredSlot];
                         InventorySlots[BackpackCurrentSlot] = (Inventory)HoveredSlot;
                         break;
@@ -593,8 +656,8 @@ namespace Project7_130716
             Players[0].CooldownIncrease(0.01f);
             if (ModeWTF)
                 Players[0].CooldownIncrease(-1f);
-            if (Players[0].Cooldowns[(int)Inventory.Pistol] > PISTOL_RELOAD_COOLDOWN && ammoInCage < 1)
-                ammoInCage = 6;
+            if (Players[0].Cooldowns[(int)Inventory.Pistol] > PISTOL_RELOAD_COOLDOWN && Players[0].ammoInCage < 1)
+                Players[0].ammoInCage = 6;
             if (Players[0].ExplosiveGrenadeDown >= 0f && EXPLOSIVE_GRENADE_DURATION > Players[0].ExplosiveGrenadeDown)
                 Players[0].ExplosiveGrenadeDown += 0.01f;
             if (Players[0].ExplosiveGrenadeDown > EXPLOSIVE_GRENADE_DURATION - 0.01f)
@@ -602,20 +665,23 @@ namespace Project7_130716
             ViewOffset = new Point(Resolution.Width / 2 - Players[0].Position.X, Resolution.Height / 2 - Players[0].Position.Y);
             if (Players[0].RespawnTimer < 0 && Players[0].FreezeDuration < 0 && Players[0].StasisDuration < 0)
             {
-                if (SwordUsed)
-                    if (swordFrames < SWORD_FRAMES)
-                        swordFrames++;
+                if (Players[0].SwordUsed)
+                    if (Players[0].swordFrames < SWORD_FRAMES)
+                    {
+                        Players[0].swordFrames++;
+                        
+                    }
                     else
                     {
-                        swordFrames = 0;
-                        SwordUsed = false;
+                        Players[0].swordFrames = 0;
+                        Players[0].SwordUsed = false;
                     }
                 if (KeysDown[0])
                     Players[0].StepLeftIfCan(Map);
                 if (KeysDown[1])
                     Players[0].StepRightIfCan(Map);
                 if (KeysDown[2])
-                    if (CurrentItem == Inventory.Jet_Pack)
+                    if (Players[0].CurrentItem == Inventory.Jet_Pack)
                     {
                         if (Players[0].JetPackFuel > 5f)
                             Players[0].JumpProgress = 50;
@@ -636,7 +702,7 @@ namespace Project7_130716
                 if (Rays[a].Type == RayType.Sniper)
                     temp++;
             for (int b = 0; b < Rays.Count; ++b)
-                if (!Rays[b].Exist || (Rays[b].Type == RayType.Sniper && (CurrentItem != Inventory.Sniper_Rifle || temp > 1)))
+                if (!Rays[b].Exist || (Rays[b].Type == RayType.Sniper && (Players[0].CurrentItem != Inventory.Sniper_Rifle || temp > 0)))
                     Rays.Remove(Rays[b]);
             for (int b = 0; b < Grenades.Count; ++b)
                 if (Grenades[b].Exist)
@@ -702,18 +768,20 @@ namespace Project7_130716
                     }
                     else
                         Projectiles.Remove(Projectiles[p]);
-            if (Players[0].StasisDuration < 0)
-            {
-                Players[0].FallIfCan(Map);
-                Players[0].JumpIfCan(Map);
-            }
             for (int a = 0; a < FloatingTexts.Count; ++a)
                 if (FloatingTexts[a].Exist)
                     FloatingTexts[a].Refresh();
                 else
                     FloatingTexts.Remove(FloatingTexts[a]);
             foreach (Character TC in Players)
+            {
+                if (TC.StasisDuration < 0)
+                {
+                    TC.FallIfCan(Map);
+                    TC.JumpIfCan(Map);
+                }
                 TC.RefreshBody();
+            }
             Players[0].Speedometer = (float)Math.Abs(Math.Sqrt(Math.Pow(Players[0].Position.X - LastPosition.X, 2) + Math.Pow(Players[0].Position.Y - LastPosition.Y, 2)));
             Invalidate();
         }
@@ -741,47 +809,50 @@ namespace Project7_130716
                                     Map.Exclude(TR.RayRegion);
                                     TR.Excluded = true;
                                 }
+                                g.FillRegion(Brushes.CornflowerBlue, TR.RayRegion);
                                 break;
                             case RayType.Freeze:
-                                if (TR.RayRegion.IsVisible(TC.Body.GetBounds(g)) && TC != TR.Initiator)
+                                if (TR.RayRegion.IsVisible(TC.Body.GetBounds(g)) && TC != TR.Initiator && TC.FreezeDuration < 0f)
                                 {
+                                    Effects.Add(new Effect(EffectType.Freeze, new Rectangle(NewOffset(TC.Position, -5, -20), new Size(64, 64)), iEffectFreezeExplosion, FREEZE_EXPLOSION_FRAMES));
                                     TC.FreezeDuration = 0f;
                                 }
+                                g.FillRegion(new LinearGradientBrush(TR.Start, TR.End, Color.LightCyan, Color.LightBlue), TR.RayRegion);
+                                break;
+                            case RayType.Sniper:
+                                g.DrawLine(Pens.Red, TR.Start, TR.End);
                                 break;
                         }
-                        if (TR.Type != RayType.Sniper)
-                            g.FillRegion(TR.Type == RayType.Railgun ? Brushes.CornflowerBlue : new LinearGradientBrush(TR.Start, TR.End, Color.LightCyan, Color.LightBlue), TR.RayRegion);
-                        else
-                            g.DrawLine(Pens.Red, TR.Start, TR.End);
                     }
                 if (TC.RespawnTimer < 0)
                 {
                     g.DrawString(TC.Health.ToString(), new Font(QuartzFont, 11), TC.getHealthBrush(), TC.getHealthRectangleF(), MiddleText);
-                    if (CurrentItem == Inventory.Jet_Pack && KeysDown[2])
+                    if (TC.CurrentItem == Inventory.Jet_Pack && KeysDown[2])
                     {
                         g.DrawImage(iEffectFlameSmall, TC.Position.X + 2, TC.Position.Y + 30);
                         g.DrawImage(iEffectFlameSmall, TC.Position.X + 19, TC.Position.Y + 30);
                     }
                     g.FillRegion(Brushes.LightSlateGray, TC.Body);
                     Rectangle SwordRectangle, SwordFrame;
-                    switch (CurrentItem)
+                    switch (TC.CurrentItem)
                     {
                         case Inventory.Sword:
                             if (TC.Rotation)
                             {
                                 SwordRectangle = new Rectangle(TC.Position.X + 21, TC.Position.Y + 6, 37, 28);
-                                SwordFrame = new Rectangle(37 * (swordFrames / 2), 0, 37, 28);
+                                SwordFrame = new Rectangle(37 * (TC.swordFrames / 2), 0, 37, 28);
                                 g.DrawImage(iRightSword, SwordRectangle, SwordFrame, GraphicsUnit.Pixel);
                             }
                             else
                             {
                                 SwordRectangle = new Rectangle(TC.Position.X - 32, TC.Position.Y + 6, 37, 28);
-                                SwordFrame = new Rectangle(74 - 37 * (swordFrames / 2), 0, 37, 28);
+                                SwordFrame = new Rectangle(74 - 37 * (TC.swordFrames / 2), 0, 37, 28);
                                 g.DrawImage(iLeftSword, SwordRectangle, SwordFrame, GraphicsUnit.Pixel);
                             }
                             break;
                         case Inventory.Sniper_Rifle:
-                            Rays.Add(new Ray(TC.getCenterPointF(), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), TC.getCenterPointF()), TC, RayType.Sniper, Map));
+                            if (TC.Cooldowns[(int)Inventory.Sniper_Rifle] >= ITEMS_COOLDOWN[(int)Inventory.Sniper_Rifle])
+                                Rays.Add(new Ray(TC.getCenterPointF(), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), TC.getCenterPointF()), Players, TC, RayType.Sniper, Map));
                             break;
                         case Inventory.Jet_Pack:
                             g.DrawLine(new Pen(Color.Red, 2), TC.Position.X + 7, TC.Position.Y + 15, TC.Position.X + 7, TC.Position.Y + 32);
@@ -790,10 +861,16 @@ namespace Project7_130716
                             g.DrawLine(new Pen(Color.Red, 2), TC.Position.X + 18, TC.Position.Y + 32, TC.Position.X + 21, TC.Position.Y + 32);
                             break;
                         case Inventory.Flaming_Fist:
-                            g.FillRectangle(Brushes.OrangeRed, TC.Position.X - 1, TC.Position.Y + 30, 5, 3);
-                            g.DrawLine(Pens.OrangeRed, TC.Position.X, TC.Position.Y + 33, TC.Position.X + 3, TC.Position.Y + 33);
-                            g.FillRectangle(Brushes.OrangeRed, TC.Position.X + 22, TC.Position.Y + 30, 5, 3);
-                            g.DrawLine(Pens.OrangeRed, TC.Position.X + 22, TC.Position.Y + 33, TC.Position.X + 25, TC.Position.Y + 33);
+                            if (TC.Rotation)
+                            {
+                                g.FillRectangle(Brushes.OrangeRed, TC.Position.X + 22, TC.Position.Y + 30, 5, 3);
+                                g.DrawLine(Pens.OrangeRed, TC.Position.X + 22, TC.Position.Y + 33, TC.Position.X + 25, TC.Position.Y + 33);
+                            }
+                            else
+                            {
+                                g.FillRectangle(Brushes.OrangeRed, TC.Position.X - 1, TC.Position.Y + 30, 5, 3);
+                                g.DrawLine(Pens.OrangeRed, TC.Position.X, TC.Position.Y + 33, TC.Position.X + 3, TC.Position.Y + 33);
+                            }
                             break;
                     }
                     if (TC.FreezeDuration > -0.01f)
@@ -853,7 +930,7 @@ namespace Project7_130716
                                     if (!calculated && distance2 < Effects[b].Dimension.Width)
                                         damage = 150 - (int)distance2;
                                     damage -= Effects[b].Frames / 4;
-                                    Boolean LethalDamage = TC.DoDamage(damage);
+                                    bool LethalDamage = TC.DoDamage(damage);
                                     if (!LethalDamage)
                                         FloatingTexts.Add(new FloatingText(new Point(TC.Position.X - 25, TC.Position.Y - 30), Color.FromArgb(255, 0, 192, 0), "Respawn", new Font(QuartzFont, 16), CHARACTER_RESPAWN_DURATION));
                                     FloatingTexts.Add(new FloatingText(new Point(TC.Position.X + 10, TC.Position.Y - 10), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION / (LethalDamage ? 3 : 1)));
@@ -861,7 +938,7 @@ namespace Project7_130716
                                 }
                                 break;
                             case EffectType.Freeze:
-                                if (TC.ShieldDuration < 0 && TC.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce)
+                                if (TC.ShieldDuration < 0f && TC.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce && TC.FreezeDuration < 1f)
                                 {
                                     TC.FreezeDuration = 0f;
                                     int damage = 30 + getRandom.Next(-10, 11);
@@ -899,7 +976,7 @@ namespace Project7_130716
             for(int a = 0; a < 4; ++a)
             {
                 g.DrawImage(InventoryIcons[a], INVENTORY_SLOTS[a]);
-                if ((int)CurrentItem == (int)InventorySlots[a])
+                if ((int)Players[0].CurrentItem == (int)InventorySlots[a])
                     g.DrawRectangle(Pens.LightGray, INVENTORY_SLOTS[a]);
                 else
                 {
@@ -911,9 +988,9 @@ namespace Project7_130716
                 {
                     if (InventorySlots[a] == Inventory.Pistol)
                     {
-                        if (ammoInCage < PISTOL_CAGE || CurrentItem == Inventory.Pistol)
-                            if (ammoInCage > 0)
-                                CDoutput = ammoInCage.ToString() + "/" + PISTOL_CAGE.ToString();
+                        if (Players[0].ammoInCage < PISTOL_CAGE || Players[0].CurrentItem == Inventory.Pistol)
+                            if (Players[0].ammoInCage > 0)
+                                CDoutput = Players[0].ammoInCage.ToString() + "/" + PISTOL_CAGE.ToString();
                             else
                                 CDoutput = "[Reload]" + Math.Round(ITEMS_COOLDOWN[(int)Inventory.Pistol] - Players[0].Cooldowns[(int)Inventory.Pistol], 1).ToString();
                     }

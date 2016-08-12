@@ -49,6 +49,7 @@ namespace Project7_130716
                             break;
                         }
                 }
+                if (Velocity > 10f) Velocity -= 0.25f;
                 Object.Position = Point.Round(next);
             }
             else

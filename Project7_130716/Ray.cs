@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
@@ -6,19 +6,28 @@ namespace Project7_130716
 {
     class Ray
     {
-        public PointF Start;
-        public Boolean
+        public PointF 
+            Start,
+            End;
+        public bool
             Exist = true,
+            Shooted = false,
             Excluded = false;
-        public float Direction;
-        public Form1.RayType Type;
-        public Character Initiator;
-        private float Width = Form1.RAY_SIZE;
-        public PointF End;
-        public float Duration = 0f;
-        public Region RayRegion = new Region(new Rectangle(-1, -1, 1, 1));
-        public Ray(PointF _Start, float _Direction, Character _Initiator, Form1.RayType _Type, Region _Map)
+        public float
+            Direction,
+            Width = Form1.RAY_SIZE,
+            Duration = 0f;
+        public Form1.RayType
+            Type;
+        public Character
+            Initiator;
+        public List<Character>
+            Players = new List<Character>();
+        public Region
+            RayRegion = new Region(new Rectangle(-1, -1, 1, 1));
+        public Ray(PointF _Start, float _Direction, List<Character> _Players, Character _Initiator, Form1.RayType _Type, Region _Map)
         {
+            Players = _Players;
             Initiator = _Initiator;
             Start = _Start;
             Direction = _Direction;

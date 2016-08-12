@@ -5,13 +5,18 @@ namespace Project7_130716
 {
     class Projectile
     {
-        public PointF Position;
-        public float Direction;
-        public Form1.GunType Type;
-        public int Power = 1000;
-        public int Size = Form1.PROJECTILE_SIZE;
-        public Boolean RicochetedOnce = false;
-        public Boolean Exist = true;
+        public PointF
+            Position;
+        public float
+            Direction;
+        public Form1.GunType
+            Type;
+        public int 
+            Power = 1000,
+            Size = Form1.PROJECTILE_SIZE;
+        public bool
+            RicochetedOnce = false,
+            Exist = true;
         public Projectile(PointF _Position, float _Direction)
         {
             Position = new PointF(Form1.Cos(_Direction) * 18 + _Position.X, Form1.Sin(_Direction) * 18 + _Position.Y);

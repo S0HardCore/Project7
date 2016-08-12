@@ -8,15 +8,20 @@ namespace Project7_130716
     {
         public Point 
             Position;
+        public Form1.Inventory
+            CurrentItem = Form1.Inventory.Sword;
         public byte
             Health = 100;
         public bool
             Rotation = true,
             AtGround = false,
             Backpack = false,
+            SwordUsed = false,
             Fly = false;
         public int 
-            JumpProgress = -1;
+            JumpProgress = -1,
+            ammoInCage = 6,
+            swordFrames = 0;
         public float 
             Speedometer = 0f,
             RespawnTimer = -0.01f;
