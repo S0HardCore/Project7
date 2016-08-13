@@ -48,9 +48,11 @@ namespace Project7_130716
             STASIS_EFFECT_DURATION = 1.75f,
             FLAME_GRENADE_COOLDOWN = 9.9f,
             SNIPER_RIFLE_COOLDOWN = 18.2f,
+            UFO_COOLDOWN = 60f,
+            UFO_DURATION = 15f,
             FLOATING_TEXT_DURATION = 0.83f;
         public static readonly float[]
-            ITEMS_COOLDOWN = new float[13]
+            ITEMS_COOLDOWN = new float[14]
             {
                 0.25f,
                 2.1f,
@@ -64,10 +66,12 @@ namespace Project7_130716
                 9.2f,
                 14.3f,
                 20.1f,
-                14f
+                14f,
+                60f
             };
         public static readonly Size
             CHARACTER_SIZE = new Size(54, 26),
+            UFO_SIZE = new Size(64, 24),
             InventorySlotSize = new Size(INVENTORY_SLOT_SIZE, INVENTORY_SLOT_SIZE),
             Resolution = Screen.PrimaryScreen.Bounds.Size;
         static readonly Point
@@ -94,7 +98,8 @@ namespace Project7_130716
             Stasis_Grenade,
             Jet_Pack,
             Sniper_Rifle,
-            Flaming_Fist
+            Flaming_Fist,
+            UFO
         }
         public enum GrenadeType
         {
@@ -111,11 +116,11 @@ namespace Project7_130716
         }
         public enum EffectType
         {
-            Explosion,
+            GrenadeExplosion,
             Teleportation,
             Freeze,
             Stasis,
-            Flame
+            UFOExplosion
         }
         public enum RayType
         {
@@ -123,8 +128,12 @@ namespace Project7_130716
             Freeze,
             Sniper
         }
+        public enum SummonType
+        {
+            UFO
+        }
         public static Image[]
-            BackpackIcons = new Image[13]
+            BackpackIcons = new Image[14]
             {
                 Properties.Resources.IconCrossedSword,
                 Properties.Resources.IconPistol,
@@ -138,7 +147,8 @@ namespace Project7_130716
                 Properties.Resources.IconStasisGrenade,
                 Properties.Resources.IconJetPack,
                 Properties.Resources.IconSniperRifle,
-                Properties.Resources.IconFlamingPunch
+                Properties.Resources.IconFlamingPunch,
+                Properties.Resources.IconUFO
             },
             InventoryIcons = new Image[4];
         public static Image
@@ -157,6 +167,7 @@ namespace Project7_130716
             iEffectStasis = Properties.Resources.EffectStasis,
             iEffectMiniStasis = Properties.Resources.EffectMiniStasis,
             iEffectFlameSmall = Properties.Resources.EffectFlameSmall,
+            iUnitUFO = Properties.Resources.UFO,
             iBackPack = Properties.Resources.Backpack,
             iConsole = Properties.Resources.GlassPanelConsole;
         static Timer
@@ -204,6 +215,8 @@ namespace Project7_130716
             Rays = new List<Ray>();
         static List<KnockbackSystem>
             Knockbacks = new List<KnockbackSystem>();
+        static List<Unit>
+            Units = new List<Unit>();
         static List<Character>
             Players = new List<Character>();
         static ConsolePrototype
@@ -222,6 +235,8 @@ namespace Project7_130716
                     QuartzFont = Family.Name;
             Cursor.Hide();
             this.Size = Resolution;
+            this.StartPosition = FormStartPosition.Manual;
+            Location = new Point();
             this.BackColor = Color.FromArgb(8, 8, 24);
             this.FormBorderStyle = FormBorderStyle.None;
             this.DoubleBuffered = true;
@@ -243,6 +258,8 @@ namespace Project7_130716
             Grenades.Clear();
             FloatingTexts.Clear();
             Projectiles.Clear();
+            Units.Clear();
+            Knockbacks.Clear();
             if (Players.Count == 0)
             {
                 Players.Add(new Character(250, 50));
@@ -407,6 +424,13 @@ namespace Project7_130716
                                 }
                             }
                             break;
+                        case Inventory.UFO:
+                            if (Players[0].Cooldowns[(int)Inventory.UFO] >= ITEMS_COOLDOWN[(int)Inventory.UFO])
+                            {
+                                Players[0].Cooldowns[(int)Inventory.UFO] = 0f;
+                                Units.Add(new Unit(NewOffset(Players[0].Position, -19, +30), UFO_SIZE, SummonType.UFO, UFO_DURATION, 10, 12, Players[0], Players));
+                            }
+                            break;
                     }
         }
 
@@ -429,9 +453,9 @@ namespace Project7_130716
                     }
         }
 
-        private static void GrenadeThrow(Boolean Over)
+        private static void GrenadeThrow(bool Over)
         {
-            Grenades.Add(new Grenade(GrenadeType.Explosive, NewOffset(Players[0].Position, 26, -5), AngleBetween((PointF)OffsetByView(new Point(MousePosition.X + 16, MousePosition.Y + 16)), Players[0].getCenterPointF()), (Over ? (EXPLOSIVE_GRENADE_DURATION - 0.01f) : Players[0].ExplosiveGrenadeDown)));
+            Grenades.Add(new Grenade(GrenadeType.Explosive, NewOffset(Players[0].Position, 26, -5), AngleBetween(OffsetByView(new Point(MousePosition.X + 16, MousePosition.Y + 16)), Players[0].getCenterPointF()), (Over ? (EXPLOSIVE_GRENADE_DURATION - 0.01f) : Players[0].ExplosiveGrenadeDown)));
             Players[0].ExplosiveGrenadeDown = -0.01f;
             Players[0].Cooldowns[(int)Inventory.Explosive_Grenade] = 0f;
         }
@@ -488,15 +512,12 @@ namespace Project7_130716
                     else
                         Console.Close();
                     break;
-                case Keys.Left:
                 case Keys.A:
                     KeysDown[0] = false;
                     break;
-                case Keys.Right:
                 case Keys.D:
                     KeysDown[1] = false;
                     break;
-                case Keys.Up:
                 case Keys.W:
                     KeysDown[2] = false;
                     break;
@@ -585,15 +606,22 @@ namespace Project7_130716
             else
                 switch (e.KeyData)
                 {
+                    case Keys.Up:
+                    case Keys.Right:
+                    case Keys.Down:
+                    case Keys.Left:
+                    case Keys.Space:
+                    case Keys.Q:
                     case Keys.E:
-                        Knockbacks.Add(new KnockbackSystem(Players[0], 50f, AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[0].getCenterPointF()), 1f));
+                        foreach (Unit TU in Units)
+                            if (TU.Type == SummonType.UFO && TU.Owner.Equals(Players[0]))
+                                TU.Command = e.KeyData.ToString();
                         break;
                     case Keys.Enter:
                         Players[0].CurrentItem = (Inventory)HoveredSlot;
                         InventoryIcons[BackpackCurrentSlot] = BackpackIcons[HoveredSlot];
                         InventorySlots[BackpackCurrentSlot] = (Inventory)HoveredSlot;
                         break;
-                    case Keys.Left:
                     case Keys.A:
                         if (!Players[0].Backpack)
                         {
@@ -607,7 +635,6 @@ namespace Project7_130716
                             else
                                 HoveredSlot--;
                         break;
-                    case Keys.Right:
                     case Keys.D:
                         if (!Players[0].Backpack)
                         {
@@ -622,7 +649,6 @@ namespace Project7_130716
                                 if (HoveredSlot < BackpackIcons.Length - 1)
                                     HoveredSlot++;
                         break;
-                    case Keys.Up:
                     case Keys.W:
                         if (!Players[0].Backpack)
                             KeysDown[2] = true;
@@ -636,7 +662,6 @@ namespace Project7_130716
                             else
                                 HoveredSlot -= 5;
                         break;
-                    case Keys.Down:
                     case Keys.S:
                         if (Players[0].Backpack)
                             if (HoveredSlot > 20)
@@ -692,6 +717,22 @@ namespace Project7_130716
                         if (Players[0].JumpProgress == -1 && Players[0].AtGround)
                         Players[0].JumpProgress = 0;
             }
+            for (int a = 0; a < Units.Count; ++a)
+                if (Units[a].Exist)
+                {
+                    Units[a].Refresh(Map);
+                    string lifetime = (UFO_DURATION - (int)Units[a].Duration).ToString();
+                    foreach (FloatingText TFT in FloatingTexts)
+                        if (TFT.Text == lifetime && TFT.MaxDuration == 0.01f)
+                            break;
+                    if (lifetime != "0")
+                        FloatingTexts.Add(new FloatingText(NewOffset(Units[a].Position, 25, -25), Color.CornflowerBlue, lifetime, new Font(QuartzFont, 13), 0.01f));
+                }
+                else
+                {
+                    Effects.Add(new Effect(EffectType.UFOExplosion, NewOffset(Units[a].Position, 0, -16), new Size(96, 96), iEffectExplosion, 44));
+                    Units.Remove(Units[a]);
+                }
             for (int a = 0; a < Knockbacks.Count; ++a)
                 if (Knockbacks[a].Exist)
                     Knockbacks[a].Refresh(Map);
@@ -712,7 +753,7 @@ namespace Project7_130716
                     switch (Grenades[b].Type)
                     {
                         case GrenadeType.Explosive:
-                            Effects.Add(new Effect(EffectType.Explosion, NewOffset(Grenades[b].Position, -48, -48), new Size(96, 96), iEffectExplosion, 44));
+                            Effects.Add(new Effect(EffectType.GrenadeExplosion, NewOffset(Grenades[b].Position, -48, -48), new Size(96, 96), iEffectExplosion, 44));
                             break;
                         case GrenadeType.Blink:
                             Effects.Add(new Effect(EffectType.Teleportation, NewOffset(Players[0].Position, -17, -6), new Size(64, 64), iEffectTeleportation, 16));
@@ -758,11 +799,8 @@ namespace Project7_130716
                                     damage = 19 + Projectiles[p].Power / 100 + getRandom.Next(6);
                                     break;
                             }
-                            bool LethalDamage = TC.DoDamage(damage);
-                            if (!LethalDamage)
-                                FloatingTexts.Add(new FloatingText(new Point(TC.Position.X - 25, TC.Position.Y - 30), Color.FromArgb(255, 0, 192, 0), "Respawn", new Font(QuartzFont, 16), CHARACTER_RESPAWN_DURATION));
-                            if (target != "none" && Players[0].ShieldDuration < 0)
-                                FloatingTexts.Add(new FloatingText(new Point(TC.Position.X + 10, TC.Position.Y - 10), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION / (LethalDamage ? 3 : 1)));
+                            if (target != "none")
+                            DoDamageWithText(TC, damage);
                             Projectiles.Remove(Projectiles[p]);
                         }
                     }
@@ -903,9 +941,6 @@ namespace Project7_130716
                         }
                         g.DrawImage(GrenadeImage, TG.Position.X, TG.Position.Y, GRENADE_SIZE, GRENADE_SIZE);
                     }
-                    else
-                        if (TG.Type == GrenadeType.Explosive)
-                        Map.Exclude(TG.HitBox);
                 for (int b = 0; b < Effects.Count; ++b)
                     if (Effects[b].Exist)
                     {
@@ -916,10 +951,10 @@ namespace Project7_130716
                                 if (Effects[b].Frames == Effects[b].MaxFrames / 3)
                                     TC.Position = NewOffset(Effects[b].Position, 15, -15);
                                 break;
-                            case EffectType.Explosion:
-                                if (TC.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce && TC.ShieldDuration < 0)
+                            case EffectType.GrenadeExplosion:
+                                if (TC.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce && TC.ShieldDuration < 0f)
                                 {
-                                    int damage = 1; Boolean calculated = false;
+                                    int damage = 1; bool calculated = false;
                                     double distance1 = Math.Abs(Math.Sqrt(Math.Pow(TC.Position.X - Effects[b].getCenter().X, 2) + Math.Pow(TC.Position.Y - Effects[b].getCenter().Y, 2))),
                                         distance2 = Math.Abs(Math.Sqrt(Math.Pow(TC.Position.X + CHARACTER_SIZE.Width - Effects[b].getCenter().X, 2) + Math.Pow(TC.Position.Y + CHARACTER_SIZE.Height - Effects[b].getCenter().Y, 2)));
                                     if (distance1 < Effects[b].Dimension.Width)
@@ -930,10 +965,7 @@ namespace Project7_130716
                                     if (!calculated && distance2 < Effects[b].Dimension.Width)
                                         damage = 150 - (int)distance2;
                                     damage -= Effects[b].Frames / 4;
-                                    bool LethalDamage = TC.DoDamage(damage);
-                                    if (!LethalDamage)
-                                        FloatingTexts.Add(new FloatingText(new Point(TC.Position.X - 25, TC.Position.Y - 30), Color.FromArgb(255, 0, 192, 0), "Respawn", new Font(QuartzFont, 16), CHARACTER_RESPAWN_DURATION));
-                                    FloatingTexts.Add(new FloatingText(new Point(TC.Position.X + 10, TC.Position.Y - 10), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION / (LethalDamage ? 3 : 1)));
+                                    DoDamageWithText(TC, damage);
                                     Effects[b].HitedOnce = true;
                                 }
                                 break;
@@ -944,28 +976,37 @@ namespace Project7_130716
                                     int damage = 30 + getRandom.Next(-10, 11);
                                     if (TC.Health - damage < 1)
                                         damage--;
-                                    TC.DoDamage(damage);
-                                    FloatingTexts.Add(new FloatingText(new Point(TC.Position.X + 10, TC.Position.Y - 10), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION));
+                                    DoDamageWithText(TC, damage);
                                     Effects[b].HitedOnce = true;
                                 }
                                 break;
                             case EffectType.Stasis:
-                                if (TC.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce && TC.ShieldDuration < 0)
+                                if (TC.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce && TC.ShieldDuration < 0f)
                                 {
                                     TC.StasisDuration = 0f;
                                     int damage = 15 + getRandom.Next(-5, 6);
                                     if (TC.Health - damage < 1)
                                         damage--;
-                                    TC.DoDamage(damage);
-                                    FloatingTexts.Add(new FloatingText(new Point(TC.Position.X + 10, TC.Position.Y - 10), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION));
+                                    DoDamageWithText(TC, damage);
                                     Effects[b].HitedOnce = true;
                                 }
                                 break;
                         }
                     }
                     else
+                    {
+                        foreach (Character TC2 in Players)
+                            if (TC2.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce && TC2.ShieldDuration < 0)
+                                DoDamageWithText(TC2, 92 + getRandom.Next(18));
+                        if (Effects[b].Type == EffectType.GrenadeExplosion || Effects[b].Type == EffectType.UFOExplosion)
+                            Map.Exclude(Effects[b].HitBox);
                         Effects.Remove(Effects[b]);
+                    }
             }
+            foreach (Unit TU in Units)
+                if (TU.Exist)
+                    if (TU.Type == SummonType.UFO)
+                        g.DrawImage(iUnitUFO, TU.Position);
             foreach (Projectile TP in Projectiles)
                 if (TP.Exist)
                     g.FillEllipse(Brushes.LightGoldenrodYellow, TP.Position.X, TP.Position.Y, TP.Size, TP.Size);
@@ -1052,6 +1093,17 @@ namespace Project7_130716
             }
             #endregion
             g.DrawImage(iCursor, MousePosition.X - 16, MousePosition.Y - 16);
+        }
+
+        static void DoDamageWithText(Character TC, int damage)
+        {
+            if (TC.ShieldDuration < 0f)
+            {
+                bool LethalDamage = TC.DoDamage(damage);
+                if (!LethalDamage)
+                    FloatingTexts.Add(new FloatingText(new Point(TC.Position.X - 25, TC.Position.Y - 30), Color.FromArgb(255, 0, 192, 0), "Respawn", new Font(QuartzFont, 16), CHARACTER_RESPAWN_DURATION));
+                FloatingTexts.Add(new FloatingText(new Point(TC.Position.X + 10, TC.Position.Y - 10), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION / (LethalDamage ? 3 : 1)));
+            }
         }
 
         int CalculateFrameRate()

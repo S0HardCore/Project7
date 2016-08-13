@@ -1,21 +1,20 @@
-﻿using System;
-using System.Drawing;
-using System.Drawing.Drawing2D;
+﻿using System.Drawing;
 
 namespace Project7_130716
 {
     class Grenade
     {
         public Form1.GrenadeType Type;
-        public Boolean
-            Exist = true,
-            Excluded = false;
-        public Point Position;
-        public float Direction;
-        public float Timer = 0f;
-        public float InitialSpeed = 10f;
-        public PointF Offset;
-        public Region HitBox = new Region();
+        public bool
+            Exist = true;
+        public Point
+            Position;
+        public PointF
+            Offset;
+        public float
+            Direction,
+            Timer = 0f,
+            InitialSpeed = 10f;
 
         public Grenade(Form1.GrenadeType _Type, Point _Position, float _Direction, float _Timer)
         {
@@ -65,10 +64,6 @@ namespace Project7_130716
                 Position.Offset(Point.Round(Offset));
                 InitialSpeed -= 0.01f;
                 Timer += 0.01f;
-                HitBox.MakeEmpty();
-                GraphicsPath GP = new GraphicsPath();
-                GP.AddEllipse(Position.X - Form1.GRENADE_SIZE * 2, Position.Y - Form1.GRENADE_SIZE * 2, Form1.GRENADE_SIZE * 4, Form1.GRENADE_SIZE * 4);
-                HitBox = new Region(GP);
             }
         }
 

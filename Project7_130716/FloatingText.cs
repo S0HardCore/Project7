@@ -3,7 +3,6 @@ using System.Drawing;
 
 namespace Project7_130716
 {
-
     class FloatingText
     {
         public Point Position;
@@ -12,7 +11,7 @@ namespace Project7_130716
         public SolidBrush Brush;
         public float Duration = 0f;
         public float MaxDuration = Form1.FLOATING_TEXT_DURATION;
-        public Boolean Exist = true;
+        public bool Exist = true;
         public FloatingText(Point _Position, SolidBrush InitialBrush, string _Text, Font __Font)
         {
             Position = _Position;

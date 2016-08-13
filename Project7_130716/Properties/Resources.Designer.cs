@@ -373,6 +373,16 @@ namespace Project7_130716.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap IconUFO {
+            get {
+                object obj = ResourceManager.GetObject("IconUFO", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap LeftSword {
             get {
                 object obj = ResourceManager.GetObject("LeftSword", resourceCulture);
@@ -386,6 +396,16 @@ namespace Project7_130716.Properties {
         internal static System.Drawing.Bitmap RightSword {
             get {
                 object obj = ResourceManager.GetObject("RightSword", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap UFO {
+            get {
+                object obj = ResourceManager.GetObject("UFO", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

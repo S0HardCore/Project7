@@ -1,11 +1,11 @@
-﻿using System;
-using System.Drawing;
+﻿using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace Project7_130716
 {
     class Effect
     {
-        public Boolean
+        public bool
             Exist = true,
             HitedOnce = false;
         public Form1.EffectType
@@ -21,6 +21,8 @@ namespace Project7_130716
             Dimension;
         public Image
             Source;
+        public Region
+            HitBox = new Region(new Rectangle(-1, -1, 1, 1));
 
         public Effect(Form1.EffectType _Type, Point _Position, Size _Dimension, Image _Source, int _MaxFrames)
         {
@@ -54,7 +56,17 @@ namespace Project7_130716
                 Frames++;
             }
             else
+            {
+                HitBox.MakeEmpty();
+                GraphicsPath GP = new GraphicsPath();
+                if (Type == Form1.EffectType.GrenadeExplosion)
+                   GP.AddEllipse(Position.X + Form1.GRENADE_SIZE, Position.Y + Form1.GRENADE_SIZE, Form1.GRENADE_SIZE * 4, Form1.GRENADE_SIZE * 4);
+                else
+                if (Type == Form1.EffectType.UFOExplosion)
+                    GP.AddEllipse(Position.X, Position.Y, Form1.GRENADE_SIZE * 6, Form1.GRENADE_SIZE * 6);
+                HitBox = new Region(GP);
                 Exist = false;
+            }
         }
     }
 }
