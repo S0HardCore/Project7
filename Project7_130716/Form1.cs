@@ -49,7 +49,7 @@ namespace Project7_130716
             FLAME_GRENADE_COOLDOWN = 9.9f,
             SNIPER_RIFLE_COOLDOWN = 18.2f,
             UFO_COOLDOWN = 60f,
-            UFO_DURATION = 15f,
+            UFO_DURATION = 7f,
             FLOATING_TEXT_DURATION = 0.83f;
         public static readonly float[]
             ITEMS_COOLDOWN = new float[14]
@@ -720,6 +720,12 @@ namespace Project7_130716
             for (int a = 0; a < Units.Count; ++a)
                 if (Units[a].Exist)
                 {
+                    foreach (Character TC in Players)
+                        if (Units[a].AbilityUsed)
+                            if (Units[a].AbilityRay.IsVisible(new Rectangle(TC.Position, CHARACTER_SIZE)))
+                            {
+                                DoDamageWithText(TC,1);
+                            }
                     Units[a].Refresh(Map);
                     string lifetime = (UFO_DURATION - (int)Units[a].Duration).ToString();
                     foreach (FloatingText TFT in FloatingTexts)
@@ -1006,7 +1012,11 @@ namespace Project7_130716
             foreach (Unit TU in Units)
                 if (TU.Exist)
                     if (TU.Type == SummonType.UFO)
-                        g.DrawImage(iUnitUFO, TU.Position);
+                    {
+                        g.DrawImage(iUnitUFO, new Rectangle(TU.Position, new Size(64, 24)));
+                        if (TU.AbilityUsed)
+                            g.FillRegion(Brushes.LightBlue, TU.AbilityRay);
+                    }
             foreach (Projectile TP in Projectiles)
                 if (TP.Exist)
                     g.FillEllipse(Brushes.LightGoldenrodYellow, TP.Position.X, TP.Position.Y, TP.Size, TP.Size);

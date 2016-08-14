@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Collections.Generic;
 
 namespace Project7_130716
@@ -16,11 +17,14 @@ namespace Project7_130716
         public Form1.SummonType
             Type;
         public float
+            AbilityDuration = 0f,
             Duration = 0f,
             MaxDuration;
         public int
             HorizontalVelocity,
             VerticalVelocity;
+        public Region
+            AbilityRay = new Region(new Rectangle(-1, -1, 1, 1));
         public bool
             AbilityUsed = false,
             Exist = true;
@@ -82,6 +86,20 @@ namespace Project7_130716
                         Duration = MaxDuration;
                         Exist = false;
                         break;
+                }
+                if (AbilityUsed)
+                {
+                    GraphicsPath TGP = new GraphicsPath();
+                    TGP.AddPie(Position.X - 18, Position.Y - 63, 100, 150, 65, 50);
+                    AbilityRay.MakeEmpty();
+                    if (AbilityDuration < 0.93f)
+                        AbilityRay = new Region(TGP);
+                    else
+                        AbilityRay = new Region(new Rectangle(0, 0, 0, 0));
+                    AbilityDuration += 0.01f;
+                    if (AbilityDuration > 0.92f && AbilityDuration < 0.94f)
+                        Duration = MaxDuration - 1.3f;
+                        
                 }
             }
             else
