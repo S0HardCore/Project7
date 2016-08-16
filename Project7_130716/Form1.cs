@@ -46,32 +46,36 @@ namespace Project7_130716
             FREEZE_EFFECT_DURATION = 1.4f,
             STASIS_GRENADE_COOLDOWN = 8.3f,
             STASIS_EFFECT_DURATION = 1.75f,
-            FLAME_GRENADE_COOLDOWN = 9.9f,
             SNIPER_RIFLE_COOLDOWN = 18.2f,
+            FLAMING_FIST_COOLDOWN = 14f,
             UFO_COOLDOWN = 60f,
             UFO_DURATION = 7f,
+            LANDMINE_COOLDOWN = 23f,
+            LANDMINE_ACTIVATION_TIME = 2f,
             FLOATING_TEXT_DURATION = 0.83f;
         public static readonly float[]
-            ITEMS_COOLDOWN = new float[14]
+            ITEMS_COOLDOWN = new float[15]
             {
-                0.25f,
-                2.1f,
-                5.6f,
-                9.3f,
-                2.3f,
-                10.8f,
-                12.5f,
-                17.3f,
-                13.4f,
-                9.2f,
-                14.3f,
-                20.1f,
-                14f,
-                60f
+                PROJECTILE_COOLDOWN,
+                PISTOL_RELOAD_COOLDOWN,
+                EXPLOSIVE_GRENADE_COOLDOWN,
+                BLINK_GRENADE_COOLDOWN,
+                SHOTGUN_RELOAD_COOLDOWN,
+                RAILGUN_COOLDOWN,
+                SHIELD_COOLDOWN,
+                FREEZE_RIFLE_COOLDOWN,
+                FREEZE_GRENADE_COOLDOWN,
+                STASIS_GRENADE_COOLDOWN,
+                0f,
+                SNIPER_RIFLE_COOLDOWN,
+                FLAMING_FIST_COOLDOWN,
+                UFO_COOLDOWN,
+                LANDMINE_COOLDOWN
             };
         public static readonly Size
             CHARACTER_SIZE = new Size(54, 26),
             UFO_SIZE = new Size(64, 24),
+            LANDMINE_SIZE = new Size(8, 4),
             InventorySlotSize = new Size(INVENTORY_SLOT_SIZE, INVENTORY_SLOT_SIZE),
             Resolution = Screen.PrimaryScreen.Bounds.Size;
         static readonly Point
@@ -99,7 +103,8 @@ namespace Project7_130716
             Jet_Pack,
             Sniper_Rifle,
             Flaming_Fist,
-            UFO
+            UFO,
+            LandMine
         }
         public enum GrenadeType
         {
@@ -120,7 +125,8 @@ namespace Project7_130716
             Teleportation,
             Freeze,
             Stasis,
-            UFOExplosion
+            UFOExplosion,
+            LandMineExplosion,
         }
         public enum RayType
         {
@@ -132,8 +138,12 @@ namespace Project7_130716
         {
             UFO
         }
+        public enum LandMineType
+        {
+            Classic
+        }
         public static Image[]
-            BackpackIcons = new Image[14]
+            BackpackIcons = new Image[15]
             {
                 Properties.Resources.IconCrossedSword,
                 Properties.Resources.IconPistol,
@@ -148,7 +158,8 @@ namespace Project7_130716
                 Properties.Resources.IconJetPack,
                 Properties.Resources.IconSniperRifle,
                 Properties.Resources.IconFlamingPunch,
-                Properties.Resources.IconUFO
+                Properties.Resources.IconUFO,
+                Properties.Resources.IconLandMine
             },
             InventoryIcons = new Image[4];
         public static Image
@@ -176,7 +187,7 @@ namespace Project7_130716
             QuartzFont = "Quartz MS";
         static int
             lastTick, lastFrameRate, frameRate,
-            botIndex = 1,
+            botIndex = 1, playerIndex = 0,
             HoveredSlot = -1, BackpackCurrentSlot = 0;
         public static bool
             ModeWTF = false,
@@ -217,6 +228,8 @@ namespace Project7_130716
             Knockbacks = new List<KnockbackSystem>();
         static List<Unit>
             Units = new List<Unit>();
+        static List<LandMine>
+            LandMines = new List<LandMine>();
         static List<Character>
             Players = new List<Character>();
         static ConsolePrototype
@@ -260,6 +273,7 @@ namespace Project7_130716
             Projectiles.Clear();
             Units.Clear();
             Knockbacks.Clear();
+            LandMines.Clear();
             if (Players.Count == 0)
             {
                 Players.Add(new Character(250, 50));
@@ -268,13 +282,15 @@ namespace Project7_130716
                 Players.Add(new Character(700, 50));
                 for (int a = 0; a < 4; ++a)
                 {
+                    if (a != 0)
+                        Players[a].Suit = new SolidBrush(Color.FromArgb(getRandom.Next(255), getRandom.Next(255), getRandom.Next(255)));
                     InventoryIcons[a] = BackpackIcons[a];
                     INVENTORY_SLOTS[a] = new Rectangle(NewOffset(INVENTORY_INITIAL_POINT, a * (INVENTORY_SLOT_SIZE + INVENTORY_SLOTS_MARGIN), 0), InventorySlotSize);
                 }
             }
             else
-                Players[0].Health = 100;
-            ViewOffset = new Point(Resolution.Width / 2 - Players[0].Position.X, Resolution.Height / 2 - Players[0].Position.Y);
+                Players[playerIndex].Health = 100;
+            ViewOffset = new Point(Resolution.Width / 2 - Players[playerIndex].Position.X, Resolution.Height / 2 - Players[playerIndex].Position.Y);
             Map.MakeEmpty();
             Map.Union(MAP_OUTTER);
             Map.Exclude(MAP_INNER);
@@ -293,34 +309,34 @@ namespace Project7_130716
         void pMouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
-                if (Players[0].FreezeDuration < 0 && Players[0].RespawnTimer < 0 && !Players[0].Backpack)
-                    switch (Players[0].CurrentItem)
+                if (Players[playerIndex].FreezeDuration < 0 && Players[playerIndex].RespawnTimer < 0 && !Players[playerIndex].Backpack)
+                    switch (Players[playerIndex].CurrentItem)
                     {
                         case Inventory.Pistol:
-                            if (Players[0].Cooldowns[0] >= ITEMS_COOLDOWN[0])
+                            if (Players[playerIndex].Cooldowns[0] >= ITEMS_COOLDOWN[0])
                             {
-                                Players[0].Cooldowns[0] = 0f;
-                                if (Players[0].ammoInCage < 1)
-                                    FloatingTexts.Add(new FloatingText(NewOffset(Players[0].Position, -32, -25), Color.CadetBlue, "Reloading", new Font(QuartzFont, 13), 0.3f));
+                                Players[playerIndex].Cooldowns[0] = 0f;
+                                if (Players[playerIndex].ammoInCage < 1)
+                                    FloatingTexts.Add(new FloatingText(NewOffset(Players[playerIndex].Position, -32, -25), Color.CadetBlue, "Reloading", new Font(QuartzFont, 13), 0.3f));
                                 else
                                 {
-                                    Players[0].ammoInCage--;
-                                    Projectiles.Add(new Projectile(Players[0].Position, AngleBetween(OffsetByView(new Point(e.X + 16, e.Y + 16)), Players[0].getCenterPointF())));
+                                    Players[playerIndex].ammoInCage--;
+                                    Projectiles.Add(new Projectile(Players[playerIndex].Position, AngleBetween(OffsetByView(new Point(e.X + 16, e.Y + 16)), Players[playerIndex].getCenterPointF())));
 
-                                    if (Players[0].ammoInCage == 0)
-                                        Players[0].Cooldowns[(int)Inventory.Pistol] = 0f;
+                                    if (Players[playerIndex].ammoInCage == 0)
+                                        Players[playerIndex].Cooldowns[(int)Inventory.Pistol] = 0f;
                                 }
                             }
                             break;
                         case Inventory.Sword:
-                            if (!Players[0].SwordUsed)
+                            if (!Players[playerIndex].SwordUsed)
                             {
-                                Players[0].SwordUsed = true;
-                                Players[0].swordFrames = 0;
+                                Players[playerIndex].SwordUsed = true;
+                                Players[playerIndex].swordFrames = 0;
                                 foreach (Character TC in Players)
                                 {
-                                    Rectangle SwordHitbox = new Rectangle(NewOffset(Players[0].Position, Players[0].Rotation ? 26 : -26, 26), (Players[0].Rotation ? new Size(35, 35) : new Size(26, 26)));
-                                    if (SwordHitbox.IntersectsWith(new Rectangle(TC.Position, new Size(26, 54))) && TC != Players[0] && TC.ShieldDuration < 0f && TC.RespawnTimer < 0f)
+                                    Rectangle SwordHitbox = new Rectangle(NewOffset(Players[playerIndex].Position, Players[playerIndex].Rotation ? 26 : -26, 26), (Players[playerIndex].Rotation ? new Size(35, 35) : new Size(26, 26)));
+                                    if (SwordHitbox.IntersectsWith(new Rectangle(TC.Position, new Size(26, 54))) && TC != Players[playerIndex] && TC.ShieldDuration < 0f && TC.RespawnTimer < 0f)
                                     {
                                         int damage = getRandom.Next(8) + 8;
                                         bool LethalDamage = TC.DoDamage(damage);
@@ -332,67 +348,67 @@ namespace Project7_130716
                             }
                             break;
                         case Inventory.Explosive_Grenade:
-                            if (Players[0].Cooldowns[(int)Inventory.Explosive_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Explosive_Grenade])
-                                Players[0].ExplosiveGrenadeDown = 0f;
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.Explosive_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Explosive_Grenade])
+                                Players[playerIndex].ExplosiveGrenadeDown = 0f;
                             break;
                         case Inventory.Blink_Grenade:
-                            if (Players[0].Cooldowns[(int)Inventory.Blink_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Blink_Grenade])
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.Blink_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Blink_Grenade])
                             {
-                                Grenades.Add(new Grenade(GrenadeType.Blink, NewOffset(Players[0].Position, 26, -5), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[0].getCenterPointF()), 0f));
-                                Players[0].Cooldowns[(int)Inventory.Blink_Grenade] = 0f;
+                                Grenades.Add(new Grenade(GrenadeType.Blink, NewOffset(Players[playerIndex].Position, 26, -5), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[playerIndex].getCenterPointF()), 0f));
+                                Players[playerIndex].Cooldowns[(int)Inventory.Blink_Grenade] = 0f;
                             }
                             break;
                         case Inventory.Shotgun:
-                            if (Players[0].Cooldowns[(int)Inventory.Shotgun] >= ITEMS_COOLDOWN[(int)Inventory.Shotgun])
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.Shotgun] >= ITEMS_COOLDOWN[(int)Inventory.Shotgun])
                             {
-                                Players[0].Cooldowns[(int)Inventory.Shotgun] = 0f;
-                                float middle = AngleBetween((PointF)OffsetByView(new Point(e.X + 16, e.Y + 16)), Players[0].getCenterPointF());
+                                Players[playerIndex].Cooldowns[(int)Inventory.Shotgun] = 0f;
+                                float middle = AngleBetween(OffsetByView(new Point(e.X + 16, e.Y + 16)), Players[playerIndex].getCenterPointF());
                                 for (float fi = (middle - 10f); fi < (middle + 10f); fi += 2.0f)
-                                    Projectiles.Add(new Projectile(Players[0].Position, fi, GunType.Shotgun));
+                                    Projectiles.Add(new Projectile(Players[playerIndex].Position, fi, GunType.Shotgun));
                             }
                             break;
                         case Inventory.Railgun:
-                            if (Players[0].Cooldowns[(int)Inventory.Railgun] >= ITEMS_COOLDOWN[(int)Inventory.Railgun])
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.Railgun] >= ITEMS_COOLDOWN[(int)Inventory.Railgun])
                             {
-                                Players[0].Cooldowns[(int)Inventory.Railgun] = 0f;
-                                Rays.Add(new Ray(Players[0].getCenterPointF(), AngleBetween(OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Players[0].getCenterPointF()), Players, Players[0], RayType.Railgun, Map));
+                                Players[playerIndex].Cooldowns[(int)Inventory.Railgun] = 0f;
+                                Rays.Add(new Ray(Players[playerIndex].getCenterPointF(), AngleBetween(OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Players[playerIndex].getCenterPointF()), Players, Players[playerIndex], RayType.Railgun, Map));
                             }
                             break;
                         case Inventory.Shield:
-                            if (Players[0].Cooldowns[(int)Inventory.Shield] >= ITEMS_COOLDOWN[(int)Inventory.Shield])
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.Shield] >= ITEMS_COOLDOWN[(int)Inventory.Shield])
                             {
-                                Players[0].Cooldowns[(int)Inventory.Shield] = Players[0].ShieldDuration = 0f;
+                                Players[playerIndex].Cooldowns[(int)Inventory.Shield] = Players[playerIndex].ShieldDuration = 0f;
                             }
                             break;
                         case Inventory.Freeze_Rifle:
-                            if (Players[0].Cooldowns[(int)Inventory.Freeze_Rifle] >= ITEMS_COOLDOWN[(int)Inventory.Freeze_Rifle])
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.Freeze_Rifle] >= ITEMS_COOLDOWN[(int)Inventory.Freeze_Rifle])
                             {
-                                Players[0].Cooldowns[(int)Inventory.Freeze_Rifle] = 0f;
-                                Ray temp_ray = new Ray(Players[0].getCenterPointF(), AngleBetween(OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Players[0].getCenterPointF()), Players, Players[0], RayType.Freeze, Map);
+                                Players[playerIndex].Cooldowns[(int)Inventory.Freeze_Rifle] = 0f;
+                                Ray temp_ray = new Ray(Players[playerIndex].getCenterPointF(), AngleBetween(OffsetByView(new Point(MousePosition.X, MousePosition.Y)), Players[playerIndex].getCenterPointF()), Players, Players[playerIndex], RayType.Freeze, Map);
                                 Rays.Add(temp_ray);
                                 Effects.Add(new Effect(EffectType.Freeze, new Rectangle(NewOffset(temp_ray.End, -32, -32), new Size(64, 64)), iEffectFreezeExplosion, FREEZE_EXPLOSION_FRAMES));
                             }
                             break;
                         case Inventory.Freeze_Grenade:
-                            if (Players[0].Cooldowns[(int)Inventory.Freeze_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Freeze_Grenade])
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.Freeze_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Freeze_Grenade])
                             {
-                                Players[0].Cooldowns[(int)Inventory.Freeze_Grenade] = 0f;
-                                Grenades.Add(new Grenade(GrenadeType.Freeze, NewOffset(Players[0].Position, 26, -5), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[0].getCenterPointF()), 0f));
+                                Players[playerIndex].Cooldowns[(int)Inventory.Freeze_Grenade] = 0f;
+                                Grenades.Add(new Grenade(GrenadeType.Freeze, NewOffset(Players[playerIndex].Position, 26, -5), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[playerIndex].getCenterPointF()), 0f));
                             }
                             break;
                         case Inventory.Stasis_Grenade:
-                            if (Players[0].Cooldowns[(int)Inventory.Stasis_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Stasis_Grenade])
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.Stasis_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Stasis_Grenade])
                             {
-                                Players[0].Cooldowns[(int)Inventory.Stasis_Grenade] = 0f;
-                                Grenades.Add(new Grenade(GrenadeType.Stasis, NewOffset(Players[0].Position, 26, -5), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[0].getCenterPointF()), 0f));
+                                Players[playerIndex].Cooldowns[(int)Inventory.Stasis_Grenade] = 0f;
+                                Grenades.Add(new Grenade(GrenadeType.Stasis, NewOffset(Players[playerIndex].Position, 26, -5), AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[playerIndex].getCenterPointF()), 0f));
                             }
                             break;
                         case Inventory.Sniper_Rifle:
-                            if (Players[0].Cooldowns[(int)Inventory.Sniper_Rifle] >= ITEMS_COOLDOWN[(int)Inventory.Sniper_Rifle])
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.Sniper_Rifle] >= ITEMS_COOLDOWN[(int)Inventory.Sniper_Rifle])
                             {
-                                Players[0].Cooldowns[(int)Inventory.Sniper_Rifle] = 0f;
+                                Players[playerIndex].Cooldowns[(int)Inventory.Sniper_Rifle] = 0f;
                                 for (int a = 0; a < Rays.Count; ++a)
-                                    if (Rays[a].Type == RayType.Sniper && Rays[a].Initiator == Players[0])
+                                    if (Rays[a].Type == RayType.Sniper && Rays[a].Initiator == Players[playerIndex])
                                         foreach (Character TC in Players)
                                             if (Rays[a].RayRegion.IsVisible(new Rectangle(TC.Position, new Size(26, 54))) && TC != Rays[a].Initiator && TC.RespawnTimer <0f)
                                             {
@@ -404,31 +420,33 @@ namespace Project7_130716
                             }
                             break;
                         case Inventory.Flaming_Fist:
-                            if (Players[0].Cooldowns[(int)Inventory.Flaming_Fist] >= ITEMS_COOLDOWN[(int)Inventory.Flaming_Fist])
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.Flaming_Fist] >= ITEMS_COOLDOWN[(int)Inventory.Flaming_Fist])
                             {
-                                Players[0].Cooldowns[(int)Inventory.Flaming_Fist] = 0f;
+                                Players[playerIndex].Cooldowns[(int)Inventory.Flaming_Fist] = 0f;
                                 foreach (Character TC in Players)
                                 {
-                                    Rectangle FistHitbox = new Rectangle(NewOffset(Players[0].Position, Players[0].Rotation ? 20 : -14, 20), (Players[0].Rotation ? new Size(30, 30) : new Size(26, 26)));
-                                    if (FistHitbox.IntersectsWith(new Rectangle(TC.Position, new Size(26, 54))) && TC != Players[0] && TC.ShieldDuration < 0f && TC.RespawnTimer < 0f)
+                                    Rectangle FistHitbox = new Rectangle(NewOffset(Players[playerIndex].Position, Players[playerIndex].Rotation ? 20 : -14, 20), (Players[playerIndex].Rotation ? new Size(30, 30) : new Size(26, 26)));
+                                    if (FistHitbox.IntersectsWith(new Rectangle(TC.Position, new Size(26, 54))) && TC != Players[playerIndex] && TC.ShieldDuration < 0f && TC.RespawnTimer < 0f)
                                     {
-                                        float Direction = AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[0].getCenterPointF());
-                                        //MessageBox.Show(Direction.ToString());
+                                        float Direction = AngleBetween(OffsetByView(NewOffset(MousePosition, 16, 16)), Players[playerIndex].getCenterPointF());
                                         Knockbacks.Add(new KnockbackSystem(TC, 35f, Direction, 1f));
-                                        int damage = getRandom.Next(10) + 30;
-                                        bool LethalDamage = TC.DoDamage(damage);
-                                        FloatingTexts.Add(new FloatingText(new Point(TC.Position.X + 10, TC.Position.Y - 20), Color.FromArgb(255, 192, 0, 0), damage.ToString(), new Font(QuartzFont, 14), FLOATING_TEXT_DURATION / (LethalDamage ? 3 : 1)));
-                                        if (!LethalDamage)
-                                            FloatingTexts.Add(new FloatingText(new Point(TC.Position.X - 25, TC.Position.Y - 30), Color.FromArgb(255, 0, 192, 0), "Respawn", new Font(QuartzFont, 16), CHARACTER_RESPAWN_DURATION));
+                                        DoDamageWithText(TC, getRandom.Next(10) + 30);
                                     }
                                 }
                             }
                             break;
                         case Inventory.UFO:
-                            if (Players[0].Cooldowns[(int)Inventory.UFO] >= ITEMS_COOLDOWN[(int)Inventory.UFO])
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.UFO] >= ITEMS_COOLDOWN[(int)Inventory.UFO])
                             {
-                                Players[0].Cooldowns[(int)Inventory.UFO] = 0f;
-                                Units.Add(new Unit(NewOffset(Players[0].Position, -19, +30), UFO_SIZE, SummonType.UFO, UFO_DURATION, 10, 12, Players[0], Players));
+                                Players[playerIndex].Cooldowns[(int)Inventory.UFO] = 0f;
+                                Units.Add(new Unit(NewOffset(Players[playerIndex].Position, -19, +30), UFO_SIZE, SummonType.UFO, UFO_DURATION, 10, 12, Players[playerIndex], Players));
+                            }
+                            break;
+                        case Inventory.LandMine:
+                            if (Players[playerIndex].Cooldowns[(int)Inventory.LandMine] >= ITEMS_COOLDOWN[(int)Inventory.LandMine])
+                            {
+                                Players[playerIndex].Cooldowns[(int)Inventory.LandMine] = 0f;
+                                LandMines.Add(new LandMine(NewOffset(Players[playerIndex].Position, 22, 22), LandMineType.Classic));
                             }
                             break;
                     }
@@ -439,15 +457,15 @@ namespace Project7_130716
             if (e.Button == MouseButtons.Middle)
                 Players[botIndex].Position = OffsetByView(e.Location);
             else
-            if (e.Button == MouseButtons.Right && !Players[0].Backpack)
-                Players[0].Position = OffsetByView(e.Location);
+            if (e.Button == MouseButtons.Right && !Players[playerIndex].Backpack)
+                Players[playerIndex].Position = OffsetByView(e.Location);
             else
             if (e.Button == MouseButtons.Left)
-                if (Players[0].RespawnTimer < 0 && !Players[0].Backpack)
-                    switch (Players[0].CurrentItem)
+                if (Players[playerIndex].RespawnTimer < 0 && !Players[playerIndex].Backpack)
+                    switch (Players[playerIndex].CurrentItem)
                     {
                         case Inventory.Explosive_Grenade:
-                            if (Players[0].ExplosiveGrenadeDown >= 0f && Players[0].Cooldowns[(int)Inventory.Explosive_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Explosive_Grenade])
+                            if (Players[playerIndex].ExplosiveGrenadeDown >= 0f && Players[playerIndex].Cooldowns[(int)Inventory.Explosive_Grenade] >= ITEMS_COOLDOWN[(int)Inventory.Explosive_Grenade])
                                 GrenadeThrow(false);
                             break;
                     }
@@ -455,9 +473,9 @@ namespace Project7_130716
 
         private static void GrenadeThrow(bool Over)
         {
-            Grenades.Add(new Grenade(GrenadeType.Explosive, NewOffset(Players[0].Position, 26, -5), AngleBetween(OffsetByView(new Point(MousePosition.X + 16, MousePosition.Y + 16)), Players[0].getCenterPointF()), (Over ? (EXPLOSIVE_GRENADE_DURATION - 0.01f) : Players[0].ExplosiveGrenadeDown)));
-            Players[0].ExplosiveGrenadeDown = -0.01f;
-            Players[0].Cooldowns[(int)Inventory.Explosive_Grenade] = 0f;
+            Grenades.Add(new Grenade(GrenadeType.Explosive, NewOffset(Players[playerIndex].Position, 26, -5), AngleBetween(OffsetByView(new Point(MousePosition.X + 16, MousePosition.Y + 16)), Players[playerIndex].getCenterPointF()), (Over ? (EXPLOSIVE_GRENADE_DURATION - 0.01f) : Players[playerIndex].ExplosiveGrenadeDown)));
+            Players[playerIndex].ExplosiveGrenadeDown = -0.01f;
+            Players[playerIndex].Cooldowns[(int)Inventory.Explosive_Grenade] = 0f;
         }
 
         void pMouseMove(object sender, MouseEventArgs e)
@@ -468,7 +486,7 @@ namespace Project7_130716
                 NewBackPack.Location.Offset(10, 10);
                 NewBackPack.Inflate(-10, -10);
                 bool Determined = false;
-                if (Players[0].Backpack && NewBackPack.Contains(e.Location))
+                if (Players[playerIndex].Backpack && NewBackPack.Contains(e.Location))
                     for (int a = 0; a < BackpackIcons.Length; ++a)
                         if (BACKPACK_SLOTS[a].Contains(e.Location))
                         {
@@ -501,8 +519,8 @@ namespace Project7_130716
                     if (Console.Enabled)
                         Console.Close();
                     else
-                        if (Players[0].Backpack)
-                        Players[0].Backpack = false;
+                        if (Players[playerIndex].Backpack)
+                        Players[playerIndex].Backpack = false;
                     else
                         Application.Exit();
                     break;
@@ -524,59 +542,59 @@ namespace Project7_130716
                 case Keys.B:
                     if (!Console.Enabled)
                     {
-                        Players[0].Backpack = !Players[0].Backpack;
-                        if (Players[0].Backpack)
-                            HoveredSlot = (int)Players[0].CurrentItem;
+                        Players[playerIndex].Backpack = !Players[playerIndex].Backpack;
+                        if (Players[playerIndex].Backpack)
+                            HoveredSlot = (int)Players[playerIndex].CurrentItem;
                         for (int a = 0; a < 3; ++a)
                             KeysDown[a] = false;
                     }
                     break;
                 case Keys.D1:
                     BackpackCurrentSlot = 0;
-                    if (!Players[0].Backpack)
-                        Players[0].CurrentItem = InventorySlots[0];
+                    if (!Players[playerIndex].Backpack)
+                        Players[playerIndex].CurrentItem = InventorySlots[0];
                     else
                         if (HoveredSlot != -1)
                     {
                         InventorySlots[0] = (Inventory)HoveredSlot;
                         InventoryIcons[0] = BackpackIcons[HoveredSlot];
-                        Players[0].CurrentItem = (Inventory)HoveredSlot;
+                        Players[playerIndex].CurrentItem = (Inventory)HoveredSlot;
                     }
                     break;
                 case Keys.D2:
                     BackpackCurrentSlot = 1;
-                    if (!Players[0].Backpack)
-                        Players[0].CurrentItem = InventorySlots[1];
+                    if (!Players[playerIndex].Backpack)
+                        Players[playerIndex].CurrentItem = InventorySlots[1];
                     else
                         if (HoveredSlot != -1)
                     {
                         InventorySlots[1] = (Inventory)HoveredSlot;
                         InventoryIcons[1] = BackpackIcons[HoveredSlot];
-                        Players[0].CurrentItem = (Inventory)HoveredSlot;
+                        Players[playerIndex].CurrentItem = (Inventory)HoveredSlot;
                     }
                     break;
                 case Keys.D3:
                     BackpackCurrentSlot = 2;
-                    if (!Players[0].Backpack)
-                        Players[0].CurrentItem = InventorySlots[2];
+                    if (!Players[playerIndex].Backpack)
+                        Players[playerIndex].CurrentItem = InventorySlots[2];
                     else
                         if (HoveredSlot != -1)
                     {
                         InventorySlots[2] = (Inventory)HoveredSlot;
                         InventoryIcons[2] = BackpackIcons[HoveredSlot];
-                        Players[0].CurrentItem = (Inventory)HoveredSlot;
+                        Players[playerIndex].CurrentItem = (Inventory)HoveredSlot;
                     }
                     break;
                 case Keys.D4:
                     BackpackCurrentSlot = 3;
-                    if (!Players[0].Backpack)
-                        Players[0].CurrentItem = InventorySlots[3];
+                    if (!Players[playerIndex].Backpack)
+                        Players[playerIndex].CurrentItem = InventorySlots[3];
                     else
                         if (HoveredSlot != -1)
                     {
                         InventorySlots[3] = (Inventory)HoveredSlot;
                         InventoryIcons[3] = BackpackIcons[HoveredSlot];
-                        Players[0].CurrentItem = (Inventory)HoveredSlot;
+                        Players[playerIndex].CurrentItem = (Inventory)HoveredSlot;
                     }
                     break;
             }
@@ -614,18 +632,18 @@ namespace Project7_130716
                     case Keys.Q:
                     case Keys.E:
                         foreach (Unit TU in Units)
-                            if (TU.Type == SummonType.UFO && TU.Owner.Equals(Players[0]))
+                            if (TU.Type == SummonType.UFO && TU.Owner.Equals(Players[playerIndex]))
                                 TU.Command = e.KeyData.ToString();
                         break;
                     case Keys.Enter:
-                        Players[0].CurrentItem = (Inventory)HoveredSlot;
+                        Players[playerIndex].CurrentItem = (Inventory)HoveredSlot;
                         InventoryIcons[BackpackCurrentSlot] = BackpackIcons[HoveredSlot];
                         InventorySlots[BackpackCurrentSlot] = (Inventory)HoveredSlot;
                         break;
                     case Keys.A:
-                        if (!Players[0].Backpack)
+                        if (!Players[playerIndex].Backpack)
                         {
-                            Players[0].Rotation = false;
+                            Players[playerIndex].Rotation = false;
                             KeysDown[0] = true;
                             KeysDown[1] = false;
                         }
@@ -636,9 +654,9 @@ namespace Project7_130716
                                 HoveredSlot--;
                         break;
                     case Keys.D:
-                        if (!Players[0].Backpack)
+                        if (!Players[playerIndex].Backpack)
                         {
-                            Players[0].Rotation = true;
+                            Players[playerIndex].Rotation = true;
                             KeysDown[0] = false;
                             KeysDown[1] = true;
                         }
@@ -650,7 +668,7 @@ namespace Project7_130716
                                     HoveredSlot++;
                         break;
                     case Keys.W:
-                        if (!Players[0].Backpack)
+                        if (!Players[playerIndex].Backpack)
                             KeysDown[2] = true;
                         else
                             if (HoveredSlot < 5)
@@ -663,7 +681,7 @@ namespace Project7_130716
                                 HoveredSlot -= 5;
                         break;
                     case Keys.S:
-                        if (Players[0].Backpack)
+                        if (Players[playerIndex].Backpack)
                             if (HoveredSlot > 20)
                                 HoveredSlot -= (int)((BackpackIcons.Length / 5) * 5);
                             else
@@ -677,45 +695,45 @@ namespace Project7_130716
 
         void pUpdate(object sender, EventArgs e)
         {
-            Point LastPosition = Players[0].Position;
-            Players[0].CooldownIncrease(0.01f);
+            Point LastPosition = Players[playerIndex].Position;
+            Players[playerIndex].CooldownIncrease(0.01f);
             if (ModeWTF)
-                Players[0].CooldownIncrease(-1f);
-            if (Players[0].Cooldowns[(int)Inventory.Pistol] > PISTOL_RELOAD_COOLDOWN && Players[0].ammoInCage < 1)
-                Players[0].ammoInCage = 6;
-            if (Players[0].ExplosiveGrenadeDown >= 0f && EXPLOSIVE_GRENADE_DURATION > Players[0].ExplosiveGrenadeDown)
-                Players[0].ExplosiveGrenadeDown += 0.01f;
-            if (Players[0].ExplosiveGrenadeDown > EXPLOSIVE_GRENADE_DURATION - 0.01f)
+                Players[playerIndex].CooldownIncrease(-1f);
+            if (Players[playerIndex].Cooldowns[(int)Inventory.Pistol] > PISTOL_RELOAD_COOLDOWN && Players[playerIndex].ammoInCage < 1)
+                Players[playerIndex].ammoInCage = 6;
+            if (Players[playerIndex].ExplosiveGrenadeDown >= 0f && EXPLOSIVE_GRENADE_DURATION > Players[playerIndex].ExplosiveGrenadeDown)
+                Players[playerIndex].ExplosiveGrenadeDown += 0.01f;
+            if (Players[playerIndex].ExplosiveGrenadeDown > EXPLOSIVE_GRENADE_DURATION - 0.01f)
                 GrenadeThrow(true);
-            ViewOffset = new Point(Resolution.Width / 2 - Players[0].Position.X, Resolution.Height / 2 - Players[0].Position.Y);
-            if (Players[0].RespawnTimer < 0 && Players[0].FreezeDuration < 0 && Players[0].StasisDuration < 0)
+            ViewOffset = new Point(Resolution.Width / 2 - Players[playerIndex].Position.X, Resolution.Height / 2 - Players[playerIndex].Position.Y);
+            if (Players[playerIndex].RespawnTimer < 0 && Players[playerIndex].FreezeDuration < 0 && Players[playerIndex].StasisDuration < 0)
             {
-                if (Players[0].SwordUsed)
-                    if (Players[0].swordFrames < SWORD_FRAMES)
+                if (Players[playerIndex].SwordUsed)
+                    if (Players[playerIndex].swordFrames < SWORD_FRAMES)
                     {
-                        Players[0].swordFrames++;
+                        Players[playerIndex].swordFrames++;
                         
                     }
                     else
                     {
-                        Players[0].swordFrames = 0;
-                        Players[0].SwordUsed = false;
+                        Players[playerIndex].swordFrames = 0;
+                        Players[playerIndex].SwordUsed = false;
                     }
                 if (KeysDown[0])
-                    Players[0].StepLeftIfCan(Map);
+                    Players[playerIndex].StepLeftIfCan(Map);
                 if (KeysDown[1])
-                    Players[0].StepRightIfCan(Map);
+                    Players[playerIndex].StepRightIfCan(Map);
                 if (KeysDown[2])
-                    if (Players[0].CurrentItem == Inventory.Jet_Pack)
+                    if (Players[playerIndex].CurrentItem == Inventory.Jet_Pack)
                     {
-                        if (Players[0].JetPackFuel > 5f)
-                            Players[0].JumpProgress = 50;
-                        if (Players[0].JetPackFuel > 0f)
-                            Players[0].JetPackFuel -= (1f + getRandom.Next(0, 7) / 10f);
+                        if (Players[playerIndex].JetPackFuel > 5f)
+                            Players[playerIndex].JumpProgress = 50;
+                        if (Players[playerIndex].JetPackFuel > 0f)
+                            Players[playerIndex].JetPackFuel -= (1f + getRandom.Next(0, 7) / 10f);
                     }
                     else
-                        if (Players[0].JumpProgress == -1 && Players[0].AtGround)
-                        Players[0].JumpProgress = 0;
+                        if (Players[playerIndex].JumpProgress == -1 && Players[playerIndex].AtGround)
+                        Players[playerIndex].JumpProgress = 0;
             }
             for (int a = 0; a < Units.Count; ++a)
                 if (Units[a].Exist)
@@ -749,7 +767,7 @@ namespace Project7_130716
                 if (Rays[a].Type == RayType.Sniper)
                     temp++;
             for (int b = 0; b < Rays.Count; ++b)
-                if (!Rays[b].Exist || (Rays[b].Type == RayType.Sniper && (Players[0].CurrentItem != Inventory.Sniper_Rifle || temp > 0)))
+                if (!Rays[b].Exist || (Rays[b].Type == RayType.Sniper && (Players[playerIndex].CurrentItem != Inventory.Sniper_Rifle || temp > 0)))
                     Rays.Remove(Rays[b]);
             for (int b = 0; b < Grenades.Count; ++b)
                 if (Grenades[b].Exist)
@@ -762,7 +780,7 @@ namespace Project7_130716
                             Effects.Add(new Effect(EffectType.GrenadeExplosion, NewOffset(Grenades[b].Position, -48, -48), new Size(96, 96), iEffectExplosion, 44));
                             break;
                         case GrenadeType.Blink:
-                            Effects.Add(new Effect(EffectType.Teleportation, NewOffset(Players[0].Position, -17, -6), new Size(64, 64), iEffectTeleportation, 16));
+                            Effects.Add(new Effect(EffectType.Teleportation, NewOffset(Players[playerIndex].Position, -17, -6), new Size(64, 64), iEffectTeleportation, 16));
                             Image rev = iEffectTeleportation;
                             rev.RotateFlip(RotateFlipType.RotateNoneFlipX);
                             Effects.Add(new Effect(EffectType.Teleportation, NewOffset(Grenades[b].Position, -45, -61), new Size(64, 64), rev, 16));
@@ -817,6 +835,20 @@ namespace Project7_130716
                     FloatingTexts[a].Refresh();
                 else
                     FloatingTexts.Remove(FloatingTexts[a]);
+            for (int a = 0; a < LandMines.Count; ++a)
+                if (LandMines[a].Exist)
+                {
+                    LandMines[a].Refresh(Map);
+                    if (LandMines[a].Duration >= LANDMINE_ACTIVATION_TIME)
+                        foreach (Character TC in Players)
+                            if (TC.Body.IsVisible(new Rectangle(LandMines[a].Position, LANDMINE_SIZE)))
+                            {
+                                Effects.Add(new Effect(EffectType.LandMineExplosion, new Rectangle(LandMines[a].Position.X - 28, LandMines[a].Position.Y - 30, 64, 64), iEffectExplosion, 44));
+                                LandMines[a].Exist = false;
+                            }
+                }
+                else
+                    LandMines.Remove(LandMines[a]);
             foreach (Character TC in Players)
             {
                 if (TC.StasisDuration < 0)
@@ -826,7 +858,7 @@ namespace Project7_130716
                 }
                 TC.RefreshBody();
             }
-            Players[0].Speedometer = (float)Math.Abs(Math.Sqrt(Math.Pow(Players[0].Position.X - LastPosition.X, 2) + Math.Pow(Players[0].Position.Y - LastPosition.Y, 2)));
+            Players[playerIndex].Speedometer = (float)Math.Abs(Math.Sqrt(Math.Pow(Players[playerIndex].Position.X - LastPosition.X, 2) + Math.Pow(Players[playerIndex].Position.Y - LastPosition.Y, 2)));
             Invalidate();
         }
 
@@ -876,7 +908,7 @@ namespace Project7_130716
                         g.DrawImage(iEffectFlameSmall, TC.Position.X + 2, TC.Position.Y + 30);
                         g.DrawImage(iEffectFlameSmall, TC.Position.X + 19, TC.Position.Y + 30);
                     }
-                    g.FillRegion(Brushes.LightSlateGray, TC.Body);
+                    g.FillRegion(TC.Suit, TC.Body);
                     Rectangle SwordRectangle, SwordFrame;
                     switch (TC.CurrentItem)
                     {
@@ -957,6 +989,7 @@ namespace Project7_130716
                                 if (Effects[b].Frames == Effects[b].MaxFrames / 3)
                                     TC.Position = NewOffset(Effects[b].Position, 15, -15);
                                 break;
+                            case EffectType.LandMineExplosion:
                             case EffectType.GrenadeExplosion:
                                 if (TC.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce && TC.ShieldDuration < 0f)
                                 {
@@ -971,6 +1004,8 @@ namespace Project7_130716
                                     if (!calculated && distance2 < Effects[b].Dimension.Width)
                                         damage = 150 - (int)distance2;
                                     damage -= Effects[b].Frames / 4;
+                                    if (Effects[b].Type == EffectType.LandMineExplosion)
+                                        damage += 50;
                                     DoDamageWithText(TC, damage);
                                     Effects[b].HitedOnce = true;
                                 }
@@ -1004,11 +1039,14 @@ namespace Project7_130716
                         foreach (Character TC2 in Players)
                             if (TC2.Body.IsVisible(Effects[b].Place) && !Effects[b].HitedOnce && TC2.ShieldDuration < 0)
                                 DoDamageWithText(TC2, 92 + getRandom.Next(18));
-                        if (Effects[b].Type == EffectType.GrenadeExplosion || Effects[b].Type == EffectType.UFOExplosion)
+                        if (Effects[b].Type == EffectType.GrenadeExplosion || Effects[b].Type == EffectType.UFOExplosion || Effects[b].Type == EffectType.LandMineExplosion)
                             Map.Exclude(Effects[b].HitBox);
                         Effects.Remove(Effects[b]);
                     }
             }
+            foreach (LandMine TLM in LandMines)
+                if (TLM.Exist)
+                    g.FillRectangle(TLM.Duration < LANDMINE_ACTIVATION_TIME ? Brushes.OrangeRed : Brushes.Red, new Rectangle(TLM.Position, LANDMINE_SIZE));
             foreach (Unit TU in Units)
                 if (TU.Exist)
                     if (TU.Type == SummonType.UFO)
@@ -1027,7 +1065,7 @@ namespace Project7_130716
             for(int a = 0; a < 4; ++a)
             {
                 g.DrawImage(InventoryIcons[a], INVENTORY_SLOTS[a]);
-                if ((int)Players[0].CurrentItem == (int)InventorySlots[a])
+                if ((int)Players[playerIndex].CurrentItem == (int)InventorySlots[a])
                     g.DrawRectangle(Pens.LightGray, INVENTORY_SLOTS[a]);
                 else
                 {
@@ -1039,27 +1077,27 @@ namespace Project7_130716
                 {
                     if (InventorySlots[a] == Inventory.Pistol)
                     {
-                        if (Players[0].ammoInCage < PISTOL_CAGE || Players[0].CurrentItem == Inventory.Pistol)
-                            if (Players[0].ammoInCage > 0)
-                                CDoutput = Players[0].ammoInCage.ToString() + "/" + PISTOL_CAGE.ToString();
+                        if (Players[playerIndex].ammoInCage < PISTOL_CAGE || Players[playerIndex].CurrentItem == Inventory.Pistol)
+                            if (Players[playerIndex].ammoInCage > 0)
+                                CDoutput = Players[playerIndex].ammoInCage.ToString() + "/" + PISTOL_CAGE.ToString();
                             else
-                                CDoutput = "[Reload]" + Math.Round(ITEMS_COOLDOWN[(int)Inventory.Pistol] - Players[0].Cooldowns[(int)Inventory.Pistol], 1).ToString();
+                                CDoutput = "[Reload]" + Math.Round(ITEMS_COOLDOWN[(int)Inventory.Pistol] - Players[playerIndex].Cooldowns[(int)Inventory.Pistol], 1).ToString();
                     }
                     else
                     if (InventorySlots[a] == Inventory.Jet_Pack)
                     {
-                        if (Players[0].JetPackFuel < JETPACK_MAX_FUEL)
-                            CDoutput = Math.Round(Math.Abs(Players[0].JetPackFuel)).ToString() + "/" + JETPACK_MAX_FUEL.ToString();
+                        if (Players[playerIndex].JetPackFuel < JETPACK_MAX_FUEL)
+                            CDoutput = Math.Round(Math.Abs(Players[playerIndex].JetPackFuel)).ToString() + "/" + JETPACK_MAX_FUEL.ToString();
                     }
                     else
-                        if (Players[0].Cooldowns[(int)InventorySlots[a]] < ITEMS_COOLDOWN[(int)InventorySlots[a]])
-                        CDoutput = Math.Round(ITEMS_COOLDOWN[(int)InventorySlots[a]] - Players[0].Cooldowns[(int)InventorySlots[a]], 1).ToString();
+                        if (Players[playerIndex].Cooldowns[(int)InventorySlots[a]] < ITEMS_COOLDOWN[(int)InventorySlots[a]])
+                        CDoutput = Math.Round(ITEMS_COOLDOWN[(int)InventorySlots[a]] - Players[playerIndex].Cooldowns[(int)InventorySlots[a]], 1).ToString();
                     g.DrawString(CDoutput, new Font("Tahoma", 14),
                                                 new SolidBrush(Color.FromArgb(190, 190, 190)), NewOffset(INVENTORY_SLOTS[a].Location, 0, 102));
                 }
                 g.DrawString((a + 1).ToString(), new Font("Tahoma", 15), new SolidBrush(Color.FromArgb(190, 190, 190)), NewOffset(INVENTORY_SLOTS[a].Location, -16, 0));
             }
-            if (Players[0].Backpack)
+            if (Players[playerIndex].Backpack)
             {
                 int OX = 0, OY = 10;
                 g.DrawImage(iBackPack, BACKPACK_RECTANGLE);
@@ -1083,12 +1121,12 @@ namespace Project7_130716
             {
                 g.FillRectangle(new SolidBrush(Color.FromArgb(64, 0, 0, 0)), FPS_RECTANGLE);
                 g.DrawString(CalculateFrameRate().ToString(), new Font(QuartzFont, 13), Brushes.White, FPS_RECTANGLE, MiddleText);
-                string output = "Velocity: " + Math.Round(Players[0].Speedometer, 2).ToString() + "\nPosition: " + Players[0].Position.ToString() + "\n" +
+                string output = "Velocity: " + Math.Round(Players[playerIndex].Speedometer, 2).ToString() + "\nPosition: " + Players[playerIndex].Position.ToString() + "\n" +
                     "View Offset: " + ViewOffset.ToString() + "\n" + Rays.Count.ToString() + "\n";
                 for (int i = 0; i < 4; ++i)
                     output += InventorySlots[i].ToString() + "\n";
                 for (int b = 0; b < BackpackIcons.Length; ++b)
-                    output += Players[0].Cooldowns[b].ToString() + "\n";
+                    output += Players[playerIndex].Cooldowns[b].ToString() + "\n";
                 g.DrawString(output, new Font(QuartzFont, 14), Brushes.Aqua, 0, FPS_RECTANGLE.Height);
             }
             #endregion
@@ -1171,14 +1209,14 @@ namespace Project7_130716
 
         public static void RefreshInventory()
         {
-            Players[0].CooldownIncrease(-1f);
+            Players[playerIndex].CooldownIncrease(-1f);
         }
 
         public static Point getRandomLocationOnMap()
         {
             Rectangle TR;
         Mark:
-            TR = new Rectangle(getRandom.Next(MAP_OUTTER.Left, MAP_OUTTER.Right), getRandom.Next(MAP_OUTTER.Top, MAP_OUTTER.Bottom), 54, 26);
+            TR = new Rectangle(getRandom.Next(MAP_OUTTER.Left, MAP_OUTTER.Right), getRandom.Next(MAP_OUTTER.Top, MAP_OUTTER.Bottom), 26, 54);
                 if (!Map.IsVisible(TR))
                     return TR.Location;
             goto Mark;

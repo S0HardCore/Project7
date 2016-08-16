@@ -10,6 +10,8 @@ namespace Project7_130716
             Position;
         public Form1.Inventory
             CurrentItem = Form1.Inventory.Sword;
+        public SolidBrush
+            Suit = new SolidBrush(Color.LightSlateGray);
         public byte
             Health = 100;
         public bool
@@ -22,9 +24,6 @@ namespace Project7_130716
             JumpProgress = -1,
             ammoInCage = 6,
             swordFrames = 0;
-        public float 
-            Speedometer = 0f,
-            RespawnTimer = -0.01f;
         public Region
             Body = new Region(new Rectangle(-1, -1, 1, 1)),
             Head = new Region(new Rectangle(-1, -1, 1, 1)),
@@ -35,6 +34,8 @@ namespace Project7_130716
         public float[]
             Cooldowns = new float[Form1.BackpackIcons.Length];
         public float
+            Speedometer = 0f,
+            RespawnTimer = -0.01f,
             ExplosiveGrenadeDown = -0.01f,
             ShieldDuration = -0.01f,
             FreezeDuration = -0.01f,

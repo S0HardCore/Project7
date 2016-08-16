@@ -59,11 +59,18 @@ namespace Project7_130716
             {
                 HitBox.MakeEmpty();
                 GraphicsPath GP = new GraphicsPath();
-                if (Type == Form1.EffectType.GrenadeExplosion)
-                   GP.AddEllipse(Position.X + Form1.GRENADE_SIZE, Position.Y + Form1.GRENADE_SIZE, Form1.GRENADE_SIZE * 4, Form1.GRENADE_SIZE * 4);
-                else
-                if (Type == Form1.EffectType.UFOExplosion)
-                    GP.AddEllipse(Position.X, Position.Y, Form1.GRENADE_SIZE * 6, Form1.GRENADE_SIZE * 6);
+                switch (Type)
+                {
+                    case Form1.EffectType.GrenadeExplosion:
+                        GP.AddEllipse(Position.X + Form1.GRENADE_SIZE, Position.Y + Form1.GRENADE_SIZE, Form1.GRENADE_SIZE * 4, Form1.GRENADE_SIZE * 4);
+                        break;
+                    case Form1.EffectType.UFOExplosion:
+                        GP.AddEllipse(Position.X, Position.Y, Form1.GRENADE_SIZE * 6, Form1.GRENADE_SIZE * 6);
+                        break;
+                    case Form1.EffectType.LandMineExplosion:
+                        GP.AddEllipse(Position.X, Position.Y, Form1.GRENADE_SIZE * 4, Form1.GRENADE_SIZE * 4);
+                        break;
+                }
                 HitBox = new Region(GP);
                 Exist = false;
             }

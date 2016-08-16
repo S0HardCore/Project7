@@ -313,6 +313,16 @@ namespace Project7_130716.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap IconLandMine {
+            get {
+                object obj = ResourceManager.GetObject("IconLandMine", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap IconPistol {
             get {
                 object obj = ResourceManager.GetObject("IconPistol", resourceCulture);
